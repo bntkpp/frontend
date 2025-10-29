@@ -2,7 +2,18 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Users, BookOpen, CreditCard, Star, LogOut, Home } from "lucide-react"
+import {
+  LayoutDashboard,
+  Users,
+  BookOpen,
+  CreditCard,
+  Star,
+  LogOut,
+  Home,
+  Layers3,
+  LibraryBig,
+  GraduationCap,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
@@ -11,6 +22,9 @@ const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/users", label: "Usuarios", icon: Users },
   { href: "/admin/courses", label: "Cursos", icon: BookOpen },
+  { href: "/admin/modules", label: "Módulos", icon: Layers3 },
+  { href: "/admin/lessons", label: "Lecciones", icon: LibraryBig },
+  { href: "/admin/enrollments", label: "Inscripciones", icon: GraduationCap },
   { href: "/admin/payments", label: "Pagos", icon: CreditCard },
   { href: "/admin/reviews", label: "Reseñas", icon: Star },
 ]
@@ -38,38 +52,36 @@ export function AdminNav() {
         {navItems.map((item) => {
           const Icon = item.icon
           const isActive = pathname === item.href
+          
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                isActive
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              }`}
-            >
-              <Icon className="h-5 w-5" />
-              <span>{item.label}</span>
+            <Link key={item.href} href={item.href}>
+              <Button
+                variant={isActive ? "secondary" : "ghost"}
+                className="w-full justify-start"
+              >
+                <Icon className="mr-2 h-4 w-4" />
+                {item.label}
+              </Button>
             </Link>
           )
         })}
       </div>
 
-      <div className="pt-4 border-t border-border space-y-1">
-        <Link
-          href="/"
-          className="flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-        >
-          <Home className="h-5 w-5" />
-          <span>Ir al Sitio</span>
+      <div className="pt-4 mt-4 border-t border-border space-y-1">
+        <Link href="/">
+          <Button variant="ghost" className="w-full justify-start">
+            <Home className="mr-2 h-4 w-4" />
+            Ir al sitio
+          </Button>
         </Link>
+        
         <Button
           variant="ghost"
-          className="w-full justify-start gap-3 px-3 text-muted-foreground hover:bg-muted hover:text-foreground"
+          className="w-full justify-start"
           onClick={handleLogout}
         >
-          <LogOut className="h-5 w-5" />
-          <span>Cerrar Sesión</span>
+          <LogOut className="mr-2 h-4 w-4" />
+          Cerrar sesión
         </Button>
       </div>
     </nav>
