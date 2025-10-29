@@ -4,6 +4,9 @@ import { AdminLayout } from "@/components/admin-layout"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 const statusLabels: Record<string, string> = {
   pending: "Pendiente",
   completed: "Completado",
