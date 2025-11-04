@@ -48,7 +48,7 @@ export async function POST(req: Request) {
         .select("id")
         .eq("user_id", user.id)
         .eq("course_id", courseId)
-        .eq("status", "active")
+        .eq("is_active", true)
         .single()
 
       if (!enrollment) {
@@ -60,12 +60,40 @@ export async function POST(req: Request) {
     }
 
     const systemPrompt = courseId
-      ? `Eres un profesor virtual experto en el curso "${courseName}". Tu objetivo es ayudar a los estudiantes a comprender mejor los conceptos, resolver dudas y guiarlos en su aprendizaje. Sé claro, paciente y educativo. Proporciona ejemplos cuando sea apropiado. Responde siempre en español.`
-      : `Eres un asistente virtual educativo de Paidek. Ayuda a los estudiantes con información general sobre la plataforma, cursos disponibles y cómo pueden mejorar su aprendizaje. Sé amigable y profesional. Responde siempre en español.`
+      ? `Eres un profesor virtual experto en el curso "${courseName}". 
 
-    // CAMBIO: usar gemini-2.5-flash (modelo disponible)
+INSTRUCCIONES IMPORTANTES:
+- Explica conceptos de forma clara y estructurada
+- Usa formato markdown para mejorar la legibilidad:
+  * Usa **negrita** para términos importantes
+  * Usa listas numeradas o con viñetas cuando sea apropiado
+  * Usa bloques de código para fórmulas matemáticas o código
+  * Usa saltos de línea para separar párrafos
+- Para fórmulas matemáticas, usa notación LaTeX entre $$ (ej: $$x^2 + y^2 = z^2$$)
+- Proporciona ejemplos prácticos cuando sea apropiado
+- Sé paciente y educativo
+- Responde siempre en español
+
+Ejemplo de buena respuesta:
+**Concepto**: [Explicación clara]
+
+**Ejemplo**:
+\`\`\`
+Código o fórmula aquí
+\`\`\`
+
+**Aplicación práctica**: [Ejemplo del mundo real]`
+      : `Eres un asistente virtual educativo de Paidek. 
+
+Ayuda a los estudiantes con:
+- Información sobre la plataforma
+- Cursos disponibles
+- Consejos de aprendizaje
+
+Usa formato markdown para mejorar la presentación. Sé amigable y profesional. Responde siempre en español.`
+
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.0-flash-exp",
       systemInstruction: systemPrompt,
     })
 
@@ -79,7 +107,9 @@ export async function POST(req: Request) {
       history: chatHistory,
       generationConfig: {
         temperature: 0.7,
-        maxOutputTokens: 1000,
+        maxOutputTokens: 2000,
+        topP: 0.95,
+        topK: 40,
       },
     })
 

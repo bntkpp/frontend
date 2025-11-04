@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { MessageCircle, X, Send } from "lucide-react";
+import { MarkdownMessage } from "@/components/markdown-message";
 
 interface ChatbotWidgetProps {
   courseId?: string;
@@ -150,7 +151,15 @@ export function ChatbotWidget({ courseId, courseName }: ChatbotWidgetProps) {
                     msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
                   }`}
                 >
-                  {msg.content}
+                  {msg.role === "assistant" ? (
+                    <div className="bg-muted rounded-lg p-4">
+                      <MarkdownMessage content={msg.content} />
+                    </div>
+                  ) : (
+                    <div className="bg-primary text-primary-foreground rounded-lg p-4">
+                      {msg.content}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
