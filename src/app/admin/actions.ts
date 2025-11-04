@@ -1,7 +1,7 @@
 "use server"
 
-import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { revalidatePath } from "next/cache"
 
 // ==================== COURSES ====================
 export async function createCourse(data: any) {
@@ -267,73 +267,182 @@ export async function deleteLesson(lessonId: string) {
 }
 
 // ==================== ENROLLMENTS ====================
-export async function createEnrollment(data: any) {
+
+export async function createEnrollment(data: {
+  user_id: string
+  course_id: string
+  is_active: boolean
+  plan_type: string | null
+  expires_at: string | null
+  enrolled_at: string
+}) {
   const supabase = await createClient()
-  
+
+  // Verificar que el usuario no esté ya inscrito en este curso
+  const { data: existingEnrollment } = await supabase
+    .from("enrollments")
+    .select("id")
+    .eq("user_id", data.user_id)
+    .eq("course_id", data.course_id)
+    .single()
+
+  if (existingEnrollment) {
+    throw new Error("El usuario ya está inscrito en este curso")
+  }
+
+  // Crear la inscripción
   const { data: enrollment, error } = await supabase
     .from("enrollments")
     .insert(data)
-    .select(`
-      *,
-      profiles(full_name, email),
-      courses(title)
-    `)
-    .maybeSingle()
+    .select()
+    .single()
 
   if (error) {
     console.error("Error creating enrollment:", error)
-    throw new Error(`Error al crear inscripción: ${error.message}`)
+    throw new Error(error.message)
+  }
+
+  // Obtener los datos relacionados (usuario y curso)
+  const { data: userProfile } = await supabase
+    .from("profiles")
+    .select("full_name, email")
+    .eq("id", data.user_id)
+    .single()
+
+  const { data: course } = await supabase
+    .from("courses")
+    .select("title")
+    .eq("id", data.course_id)
+    .single()
+
+  // Combinar los datos
+  const enrollmentWithDetails = {
+    ...enrollment,
+    profiles: userProfile || { full_name: "", email: "" },
+    courses: course || { title: "" },
   }
 
   revalidatePath("/admin/enrollments")
-  return enrollment
+  return enrollmentWithDetails
 }
 
-export async function updateEnrollment(enrollmentId: string, data: any) {
+export async function updateEnrollment(
+  id: string,
+  data: {
+    is_active?: boolean
+    plan_type?: string | null
+    expires_at?: string | null
+  }
+) {
   const supabase = await createClient()
-  
+
+  // Actualizar la inscripción
   const { data: enrollment, error } = await supabase
     .from("enrollments")
     .update(data)
-    .eq("id", enrollmentId)
-    .select(`
-      *,
-      profiles(full_name, email),
-      courses(title)
-    `)
-    .maybeSingle()
+    .eq("id", id)
+    .select()
+    .single()
 
   if (error) {
     console.error("Error updating enrollment:", error)
-    throw new Error(`Error al actualizar inscripción: ${error.message}`)
+    throw new Error(error.message)
   }
 
-  if (!enrollment) {
-    throw new Error("No se encontró la inscripción")
+  // Obtener los datos relacionados
+  const { data: userProfile } = await supabase
+    .from("profiles")
+    .select("full_name, email")
+    .eq("id", enrollment.user_id)
+    .single()
+
+  const { data: course } = await supabase
+    .from("courses")
+    .select("title")
+    .eq("id", enrollment.course_id)
+    .single()
+
+  // Combinar los datos
+  const enrollmentWithDetails = {
+    ...enrollment,
+    profiles: userProfile || { full_name: "", email: "" },
+    courses: course || { title: "" },
   }
 
   revalidatePath("/admin/enrollments")
-  return enrollment
+  return enrollmentWithDetails
 }
 
-export async function deleteEnrollment(enrollmentId: string) {
-  console.log("🗑️ Deleting enrollment:", enrollmentId)
-  
+export async function deleteEnrollment(id: string) {
   const supabase = await createClient()
-  
-  const { error } = await supabase
-    .from("enrollments")
-    .delete()
-    .eq("id", enrollmentId)
+
+  const { error } = await supabase.from("enrollments").delete().eq("id", id)
 
   if (error) {
     console.error("Error deleting enrollment:", error)
-    throw new Error(`Error al eliminar inscripción: ${error.message}`)
+    throw new Error(error.message)
   }
 
-  console.log("✅ Enrollment deleted successfully")
+  revalidatePath("/admin/enrollments")
+}
+
+export async function extendEnrollment(id: string, months: number) {
+  const supabase = await createClient()
+
+  // Obtener la inscripción actual
+  const { data: enrollment } = await supabase
+    .from("enrollments")
+    .select("*")
+    .eq("id", id)
+    .single()
+
+  if (!enrollment) {
+    throw new Error("Inscripción no encontrada")
+  }
+
+  // Calcular nueva fecha de expiración
+  const currentExpiry = enrollment.expires_at ? new Date(enrollment.expires_at) : new Date()
+  const newExpiry = new Date(currentExpiry)
+  newExpiry.setMonth(newExpiry.getMonth() + months)
+
+  // Actualizar la inscripción
+  const { data: updatedEnrollment, error } = await supabase
+    .from("enrollments")
+    .update({
+      expires_at: newExpiry.toISOString(),
+      is_active: true,
+    })
+    .eq("id", id)
+    .select()
+    .single()
+
+  if (error) {
+    console.error("Error extending enrollment:", error)
+    throw new Error(error.message)
+  }
+
+  // Obtener los datos relacionados
+  const { data: userProfile } = await supabase
+    .from("profiles")
+    .select("full_name, email")
+    .eq("id", updatedEnrollment.user_id)
+    .single()
+
+  const { data: course } = await supabase
+    .from("courses")
+    .select("title")
+    .eq("id", updatedEnrollment.course_id)
+    .single()
+
+  // Combinar los datos
+  const enrollmentWithDetails = {
+    ...updatedEnrollment,
+    profiles: userProfile || { full_name: "", email: "" },
+    courses: course || { title: "" },
+  }
 
   revalidatePath("/admin/enrollments")
+  return enrollmentWithDetails
 }
 
 // ==================== USERS ====================
@@ -356,38 +465,33 @@ export async function updateUserRole(userId: string, role: string) {
   return data
 }
 
-export async function deleteUser(userId: string) {
-  console.log("🗑️ Deleting user:", userId)
-  
+// ==================== USER ACTIONS ====================
+export async function updateUser(userId: string, data: { full_name?: string; role?: string }) {
   const supabase = await createClient()
-  
-  // Verificar si hay inscripciones
-  const { data: enrollments, error: enrollmentsError } = await supabase
-    .from("enrollments")
-    .select("id")
-    .eq("user_id", userId)
-    .limit(1)
 
-  if (enrollmentsError) {
-    console.error("Error checking enrollments:", enrollmentsError)
-    throw new Error(`Error al verificar inscripciones: ${enrollmentsError.message}`)
-  }
-
-  if (enrollments && enrollments.length > 0) {
-    throw new Error("No puedes eliminar un usuario que tiene inscripciones. Elimina primero las inscripciones.")
-  }
-
-  const { error } = await supabase
+  const { data: updatedUser, error } = await supabase
     .from("profiles")
-    .delete()
+    .update(data)
     .eq("id", userId)
+    .select()
+    .single()
 
   if (error) {
-    console.error("Error deleting user:", error)
-    throw new Error(`Error al eliminar usuario: ${error.message}`)
+    throw new Error(error.message)
   }
 
-  console.log("✅ User deleted successfully")
+  revalidatePath("/admin/users")
+  return updatedUser
+}
+
+export async function deleteUser(userId: string) {
+  const supabase = await createClient()
+
+  const { error } = await supabase.from("profiles").delete().eq("id", userId)
+
+  if (error) {
+    throw new Error(error.message)
+  }
 
   revalidatePath("/admin/users")
 }
