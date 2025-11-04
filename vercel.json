@@ -1,0 +1,22 @@
+{
+  "functions": {
+    "src/app/api/webhook/mercadopago/route.ts": {
+      "maxDuration": 30
+    }
+  },
+  "headers": [
+    {
+      "source": "/api/webhook/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET,POST,OPTIONS"
+        }
+      ]
+    }
+  ]
+}
