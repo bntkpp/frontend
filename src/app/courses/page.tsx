@@ -13,10 +13,12 @@ interface Course {
   description: string
   short_description: string | null
   image_url: string | null
-  price: number
+  price_1_month: number
+  price_4_months: number
+  price_8_months: number
   duration_hours: number | null
   level: string | null
-  is_published: boolean
+  published: boolean
 }
 
 export default function CoursesPage() {
@@ -32,11 +34,11 @@ export default function CoursesPage() {
       const { data, error } = await supabase
         .from("courses")
         .select("*")
-        .eq("is_published", true)
+        .eq("published", true)
         .order("created_at", { ascending: false })
 
       if (error) {
-        console.error("[v0] Error fetching courses:", error)
+        console.error("Error fetching courses:", error)
       } else {
         setCourses(data || [])
         setFilteredCourses(data || [])
@@ -75,7 +77,7 @@ export default function CoursesPage() {
           <div className="container mx-auto px-4">
             <h1 className="text-4xl md:text-5xl font-bold mb-4 text-balance">Catálogo de Cursos</h1>
             <p className="text-lg text-muted-foreground max-w-2xl text-balance leading-relaxed">
-              Explora nuestra colección completa de cursos para exámenes libres
+              Explora nuestra colección completa de cursos para exámenes libres. Elige el plan que mejor se adapte a tus necesidades.
             </p>
           </div>
         </section>
@@ -101,7 +103,9 @@ export default function CoursesPage() {
                     title={course.title}
                     description={course.short_description || course.description}
                     image_url={course.image_url}
-                    price={course.price}
+                    price_1_month={course.price_1_month}
+                    price_4_months={course.price_4_months}
+                    price_8_months={course.price_8_months}
                     duration_hours={course.duration_hours}
                     level={course.level}
                   />
