@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
         pending: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/pending`,
       },
       auto_return: "approved" as const,
-      notification_url: `${process.env.NEXT_PUBLIC_BASE_URL}/api/webhooks/mercadopago`,
+      notification_url: `${process.env.NEXT_PUBLIC_BASE_URL}/api/webhook/mercadopago`,
       metadata: {
         course_id: courseId,
         user_id: userId,
