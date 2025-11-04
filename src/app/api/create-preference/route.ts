@@ -1,113 +1,105 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { MercadoPagoConfig, Preference } from "mercadopago"
-import { createClient } from "@/lib/supabase/server"
 
-const client = new MercadoPagoConfig({
-  accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN!,
-})
+const planLabels: Record<string, string> = {
+  "1_month": "Plan Mensual",
+  "4_months": "Plan 4 Meses",
+  "8_months": "Plan 8 Meses",
+}
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const { courseId } = await request.json()
+    const body = await request.json()
+    const { courseId, userId, plan, price, months } = body
 
-    console.log("[MercadoPago] Creating preference for course:", courseId)
+    console.log("Creating preference:", { courseId, userId, plan, price, months })
 
-    const supabase = await createClient()
-
-    // Verificar autenticación
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      console.error("[MercadoPago] Auth error:", authError)
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 })
+    if (!courseId || !userId || !plan || !price) {
+      return NextResponse.json(
+        { error: "Missing required fields" },
+        { status: 400 }
+      )
     }
 
-    console.log("[MercadoPago] User authenticated:", user.email)
+    // Usar la variable que ya tienes
+    const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN || process.env.MERCADOPAGO_ACCESS_TOKEN
 
-    // Obtener datos del curso
-    const { data: course, error: courseError } = await supabase
-      .from("courses")
-      .select("*")
-      .eq("id", courseId)
-      .single()
-
-    if (courseError || !course) {
-      console.error("[MercadoPago] Course error:", courseError)
-      return NextResponse.json({ error: "Curso no encontrado" }, { status: 404 })
+    if (!accessToken) {
+      console.error("MERCADO_PAGO_ACCESS_TOKEN not configured")
+      return NextResponse.json(
+        { error: "Payment service not configured" },
+        { status: 500 }
+      )
     }
 
-    console.log("[MercadoPago] Course found:", course.title, "Price:", course.price)
+    const client = new MercadoPagoConfig({
+      accessToken: accessToken,
+    })
 
-    // Validar precio
-    const price = Number(course.price)
-    if (isNaN(price) || price <= 0) {
-      console.error("[MercadoPago] Invalid price:", course.price)
-      return NextResponse.json({ error: "Precio inválido" }, { status: 400 })
-    }
+    // Get course name from Supabase
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
-    // Crear preferencia de pago
+    const courseResponse = await fetch(
+      `${supabaseUrl}/rest/v1/courses?id=eq.${courseId}&select=title`,
+      {
+        headers: {
+          apikey: supabaseKey,
+          Authorization: `Bearer ${supabaseKey}`,
+        },
+      }
+    )
+
+    const courses = await courseResponse.json()
+    const courseTitle = courses[0]?.title || "Curso"
+
     const preference = new Preference(client)
-    
-    const preferenceBody = {
+
+    const preferenceData = {
       items: [
         {
-          id: course.id,
-          title: course.title,
-          description: course.short_description || course.description || "Curso",
+          title: `${courseTitle} - ${planLabels[plan]}`,
+          description: `Acceso al curso por ${months} ${months === 1 ? "mes" : "meses"}`,
           quantity: 1,
-          unit_price: price,
+          unit_price: Number(price),
           currency_id: "CLP",
         },
       ],
-      payer: {
-        email: user.email!,
-      },
       back_urls: {
-        success: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/success?courseId=${courseId}`,
+        success: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/success?courseId=${courseId}&plan=${plan}`,
         failure: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/failure`,
         pending: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/pending`,
       },
       auto_return: "approved" as const,
-      external_reference: `${user.id}-${courseId}`,
       notification_url: `${process.env.NEXT_PUBLIC_BASE_URL}/api/webhooks/mercadopago`,
       metadata: {
-        user_id: user.id,
         course_id: courseId,
+        user_id: userId,
+        plan_type: plan, // IMPORTANTE: Asegúrate que esto se envíe
+        months: months.toString(),
       },
     }
 
-    console.log("[MercadoPago] Creating preference with body:", JSON.stringify(preferenceBody, null, 2))
+    console.log("Preference data:", JSON.stringify(preferenceData, null, 2))
 
-    const preferenceData = await preference.create({
-      body: preferenceBody,
+    const response = await preference.create({
+      body: preferenceData,
     })
 
-    console.log("[MercadoPago] Preference created successfully!")
-    console.log("[MercadoPago] Preference ID:", preferenceData.id)
-    console.log("[MercadoPago] Init Point:", preferenceData.init_point)
+    console.log("Preference created:", response.id)
 
     return NextResponse.json({
-      preferenceId: preferenceData.id,
-      initPoint: preferenceData.init_point,
+      preferenceId: response.id,
+      initPoint: response.init_point,
     })
   } catch (error: any) {
-    console.error("[MercadoPago] Error creating preference:", error.message)
-    console.error("[MercadoPago] Error name:", error.name)
-    console.error("[MercadoPago] Error cause:", error.cause)
-    
-    // Capturar más detalles del error
-    if (error.cause) {
-      console.error("[MercadoPago] Cause message:", error.cause.message)
-      console.error("[MercadoPago] Cause details:", error.cause)
-    }
+    console.error("Error creating preference:", error)
+    console.error("Error details:", error.message, error.cause)
     
     return NextResponse.json(
       { 
-        error: "Error al procesar el pago. Por favor intenta nuevamente.",
-        technical: error.message,
+        error: "Error al crear la preferencia de pago",
+        details: error.message || "Unknown error",
       },
       { status: 500 }
     )
