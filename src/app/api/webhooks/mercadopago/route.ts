@@ -21,7 +21,7 @@ const supabaseAdmin = createClient(
   }
 )
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
     const body = await request.json()
     console.log("🔔 Webhook received:", JSON.stringify(body, null, 2))
@@ -163,6 +163,4 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET() {
-  return NextResponse.json({ message: "MercadoPago webhook endpoint" })
-}
+
