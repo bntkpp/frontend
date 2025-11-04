@@ -1,11 +1,11 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { CheckCircle2 } from "lucide-react"
+import { CheckCircle, CheckCircle2 } from "lucide-react"
 import Link from "next/link"
 
 export default function PaymentSuccessPage() {
@@ -82,25 +82,26 @@ export default function PaymentSuccessPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-6">
+    <div className="min-h-screen flex items-center justify-center p-4">
       <Card className="max-w-md w-full">
-        <CardContent className="pt-6 text-center space-y-6">
-          <div className="flex justify-center">
-            <div className="rounded-full bg-accent/20 p-4">
-              <CheckCircle2 className="h-12 w-12 text-accent" />
-            </div>
+        <CardHeader className="text-center">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+            <CheckCircle className="h-6 w-6 text-green-600" />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold mb-2">Pago Exitoso</h1>
-            <p className="text-muted-foreground">
-              Tu pago ha sido procesado correctamente. Ya puedes acceder al curso.
-            </p>
-          </div>
-          <div className="flex flex-col gap-3">
-            <Button asChild size="lg">
+          <CardTitle className="text-2xl">¡Pago Exitoso!</CardTitle>
+          <CardDescription>
+            Tu pago ha sido procesado correctamente
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-center text-muted-foreground">
+            Tu inscripción ha sido activada. Ya puedes acceder al curso.
+          </p>
+          <div className="flex flex-col gap-2">
+            <Button asChild className="w-full">
               <Link href="/dashboard">Ir a Mis Cursos</Link>
             </Button>
-            <Button variant="outline" asChild>
+            <Button asChild variant="outline" className="w-full">
               <Link href="/courses">Explorar Más Cursos</Link>
             </Button>
           </div>
