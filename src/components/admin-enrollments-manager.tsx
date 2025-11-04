@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { updateEnrollment, deleteEnrollment, createEnrollment } from "@/app/admin/actions"
+import { updateEnrollment, deleteEnrollment, createEnrollment, extendEnrollment } from "@/app/admin/actions"
 import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -31,9 +31,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Pencil, Trash2, Plus, Calendar, GraduationCap } from "lucide-react"
+import { Pencil, Trash2, Plus, Calendar, GraduationCap, MoreVertical, Clock } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { es } from "date-fns/locale"
 
@@ -42,7 +50,7 @@ interface EnrollmentWithDetails {
   user_id: string
   course_id: string
   is_active: boolean
-  subscription_type: string | null
+  plan_type: string | null
   expires_at: string | null
   enrolled_at: string
   profiles: {
@@ -67,6 +75,7 @@ export function AdminEnrollmentsManager({
 }: AdminEnrollmentsManagerProps) {
   const [enrollments, setEnrollments] = useState(initialEnrollments)
   const [searchTerm, setSearchTerm] = useState("")
+  const { toast } = useToast()
 
   const filteredEnrollments = enrollments.filter(
     (enrollment) =>
@@ -87,6 +96,29 @@ export function AdminEnrollmentsManager({
     setEnrollments((prev) => prev.filter((e) => e.id !== enrollmentId))
   }
 
+  const handleExtendEnrollment = async (enrollmentId: string, months: number) => {
+    try {
+      const updated = await extendEnrollment(enrollmentId, months)
+      handleEnrollmentUpdated(updated)
+      toast({
+        title: "Inscripción extendida",
+        description: `Se extendió la inscripción por ${months} ${months === 1 ? "mes" : "meses"}`,
+      })
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error al extender",
+        description: error.message,
+      })
+    }
+  }
+
+  // Estadísticas
+  const activeEnrollments = enrollments.filter((e) => e.is_active).length
+  const expiredEnrollments = enrollments.filter(
+    (e) => e.expires_at && new Date(e.expires_at) < new Date()
+  ).length
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -99,6 +131,34 @@ export function AdminEnrollmentsManager({
           courses={courses}
           onCreated={handleEnrollmentCreated}
         />
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Total Inscripciones</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{enrollments.length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Activas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{activeEnrollments}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">Expiradas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">{expiredEnrollments}</div>
+          </CardContent>
+        </Card>
       </div>
 
       <Card>
@@ -119,7 +179,7 @@ export function AdminEnrollmentsManager({
               <TableRow>
                 <TableHead>Estudiante</TableHead>
                 <TableHead>Curso</TableHead>
-                <TableHead>Tipo</TableHead>
+                <TableHead>Plan</TableHead>
                 <TableHead>Expira</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead>Inscrito</TableHead>
@@ -127,66 +187,125 @@ export function AdminEnrollmentsManager({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredEnrollments.map((enrollment) => (
-                <TableRow key={enrollment.id}>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{enrollment.profiles.full_name}</div>
+              {filteredEnrollments.map((enrollment) => {
+                const isExpired =
+                  enrollment.expires_at && new Date(enrollment.expires_at) < new Date()
+                const daysUntilExpiry = enrollment.expires_at
+                  ? Math.ceil(
+                      (new Date(enrollment.expires_at).getTime() - new Date().getTime()) /
+                        (1000 * 60 * 60 * 24)
+                    )
+                  : null
+
+                return (
+                  <TableRow key={enrollment.id}>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{enrollment.profiles.full_name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {enrollment.profiles.email}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>{enrollment.courses.title}</TableCell>
+                    <TableCell>
+                      {enrollment.plan_type ? (
+                        <Badge variant="outline">
+                          {enrollment.plan_type.replace("_", " ")}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">N/A</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {enrollment.expires_at ? (
+                        <div>
+                          <div className="text-sm">
+                            {new Date(enrollment.expires_at).toLocaleDateString("es-CL")}
+                          </div>
+                          {daysUntilExpiry !== null && (
+                            <div
+                              className={`text-xs ${
+                                isExpired
+                                  ? "text-red-600"
+                                  : daysUntilExpiry <= 7
+                                  ? "text-orange-600"
+                                  : "text-muted-foreground"
+                              }`}
+                            >
+                              {isExpired
+                                ? "Expirado"
+                                : `${daysUntilExpiry} ${daysUntilExpiry === 1 ? "día" : "días"} restantes`}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">Sin límite</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {enrollment.is_active && !isExpired ? (
+                        <Badge className="bg-green-500">Activo</Badge>
+                      ) : isExpired ? (
+                        <Badge variant="destructive">Expirado</Badge>
+                      ) : (
+                        <Badge variant="secondary">Inactivo</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
                       <div className="text-sm text-muted-foreground">
-                        {enrollment.profiles.email}
+                        {formatDistanceToNow(new Date(enrollment.enrolled_at), {
+                          addSuffix: true,
+                          locale: es,
+                        })}
                       </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>{enrollment.courses.title}</TableCell>
-                  <TableCell>
-                    {enrollment.subscription_type ? (
-                      <Badge variant="outline">
-                        {enrollment.subscription_type.replace("_", " ")}
-                      </Badge>
-                    ) : (
-                      <span className="text-muted-foreground text-sm">N/A</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {enrollment.expires_at ? (
-                      <div className="text-sm">
-                        {new Date(enrollment.expires_at).toLocaleDateString("es-CL")}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => handleExtendEnrollment(enrollment.id, 1)}
+                            >
+                              <Clock className="mr-2 h-4 w-4" />
+                              Extender 1 mes
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleExtendEnrollment(enrollment.id, 4)}
+                            >
+                              <Clock className="mr-2 h-4 w-4" />
+                              Extender 4 meses
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleExtendEnrollment(enrollment.id, 8)}
+                            >
+                              <Clock className="mr-2 h-4 w-4" />
+                              Extender 8 meses
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        <EditEnrollmentDialog
+                          enrollment={enrollment}
+                          users={users}
+                          courses={courses}
+                          onUpdated={handleEnrollmentUpdated}
+                        />
+                        <DeleteEnrollmentDialog
+                          enrollment={enrollment}
+                          onDeleted={handleEnrollmentDeleted}
+                        />
                       </div>
-                    ) : (
-                      <span className="text-muted-foreground text-sm">Sin límite</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {enrollment.is_active ? (
-                      <Badge className="bg-green-500">Activo</Badge>
-                    ) : (
-                      <Badge variant="secondary">Inactivo</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm text-muted-foreground">
-                      {formatDistanceToNow(new Date(enrollment.enrolled_at), {
-                        addSuffix: true,
-                        locale: es,
-                      })}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <EditEnrollmentDialog
-                        enrollment={enrollment}
-                        users={users}
-                        courses={courses}
-                        onUpdated={handleEnrollmentUpdated}
-                      />
-                      <DeleteEnrollmentDialog
-                        enrollment={enrollment}
-                        onDeleted={handleEnrollmentDeleted}
-                      />
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
 
@@ -216,20 +335,32 @@ function CreateEnrollmentDialog({
 }) {
   const [isOpen, setIsOpen] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
+  const [selectedUser, setSelectedUser] = useState("")
+  const [selectedCourse, setSelectedCourse] = useState("")
   const { toast } = useToast()
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    
+    if (!selectedUser || !selectedCourse) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Debes seleccionar un estudiante y un curso",
+      })
+      return
+    }
+
     setIsCreating(true)
 
     const formData = new FormData(event.currentTarget)
-    const subscriptionType = formData.get("subscription_type") as string
+    const planType = formData.get("plan_type") as string
 
     // Calcular fecha de expiración
     let expiresAt = null
-    if (subscriptionType && subscriptionType !== "none") {
+    if (planType && planType !== "none") {
       const now = new Date()
-      switch (subscriptionType) {
+      switch (planType) {
         case "1_month":
           now.setMonth(now.getMonth() + 1)
           break
@@ -244,10 +375,10 @@ function CreateEnrollmentDialog({
     }
 
     const payload = {
-      user_id: formData.get("user_id") as string,
-      course_id: formData.get("course_id") as string,
+      user_id: selectedUser,
+      course_id: selectedCourse,
       is_active: formData.get("is_active") === "on",
-      subscription_type: subscriptionType === "none" ? null : subscriptionType,
+      plan_type: planType === "none" ? null : planType,
       expires_at: expiresAt,
       enrolled_at: new Date().toISOString(),
     }
@@ -260,6 +391,8 @@ function CreateEnrollmentDialog({
         description: "La inscripción se creó correctamente.",
       })
       setIsOpen(false)
+      setSelectedUser("")
+      setSelectedCourse("")
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -287,7 +420,7 @@ function CreateEnrollmentDialog({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="user_id">Estudiante *</Label>
-            <Select name="user_id" required>
+            <Select value={selectedUser} onValueChange={setSelectedUser} required>
               <SelectTrigger>
                 <SelectValue placeholder="Selecciona un estudiante" />
               </SelectTrigger>
@@ -303,7 +436,7 @@ function CreateEnrollmentDialog({
 
           <div className="space-y-2">
             <Label htmlFor="course_id">Curso *</Label>
-            <Select name="course_id" required>
+            <Select value={selectedCourse} onValueChange={setSelectedCourse} required>
               <SelectTrigger>
                 <SelectValue placeholder="Selecciona un curso" />
               </SelectTrigger>
@@ -318,13 +451,13 @@ function CreateEnrollmentDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="subscription_type">Tipo de Suscripción</Label>
-            <Select name="subscription_type" defaultValue="4_months">
+            <Label htmlFor="plan_type">Tipo de Plan</Label>
+            <Select name="plan_type" defaultValue="4_months">
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">Sin suscripción</SelectItem>
+                <SelectItem value="none">Sin plan</SelectItem>
                 <SelectItem value="1_month">1 Mes</SelectItem>
                 <SelectItem value="4_months">4 Meses</SelectItem>
                 <SelectItem value="8_months">8 Meses</SelectItem>
@@ -372,13 +505,13 @@ function EditEnrollmentDialog({
     setIsSaving(true)
 
     const formData = new FormData(event.currentTarget)
-    const subscriptionType = formData.get("subscription_type") as string
+    const planType = formData.get("plan_type") as string
 
     // Calcular nueva fecha de expiración si cambió el tipo
     let expiresAt = enrollment.expires_at
-    if (subscriptionType && subscriptionType !== "none" && subscriptionType !== enrollment.subscription_type) {
+    if (planType && planType !== "none" && planType !== enrollment.plan_type) {
       const now = new Date()
-      switch (subscriptionType) {
+      switch (planType) {
         case "1_month":
           now.setMonth(now.getMonth() + 1)
           break
@@ -390,13 +523,13 @@ function EditEnrollmentDialog({
           break
       }
       expiresAt = now.toISOString()
-    } else if (subscriptionType === "none") {
+    } else if (planType === "none") {
       expiresAt = null
     }
 
     const payload = {
       is_active: formData.get("is_active") === "on",
-      subscription_type: subscriptionType === "none" ? null : subscriptionType,
+      plan_type: planType === "none" ? null : planType,
       expires_at: expiresAt,
     }
 
@@ -435,16 +568,16 @@ function EditEnrollmentDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="subscription_type">Tipo de Suscripción</Label>
+            <Label htmlFor="plan_type">Tipo de Plan</Label>
             <Select
-              name="subscription_type"
-              defaultValue={enrollment.subscription_type || "none"}
+              name="plan_type"
+              defaultValue={enrollment.plan_type || "none"}
             >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">Sin suscripción</SelectItem>
+                <SelectItem value="none">Sin plan</SelectItem>
                 <SelectItem value="1_month">1 Mes</SelectItem>
                 <SelectItem value="4_months">4 Meses</SelectItem>
                 <SelectItem value="8_months">8 Meses</SelectItem>

@@ -33,7 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Pencil, Trash2, Plus, DollarSign, Clock, BookOpen } from "lucide-react"
+import { Pencil, Trash2, Plus, DollarSign, Clock, BookOpen, Video } from "lucide-react"
 
 interface AdminCoursesManagerProps {
   initialCourses: any[]
@@ -55,7 +55,6 @@ export function AdminCoursesManager({ initialCourses }: AdminCoursesManagerProps
 
   const handleCourseDeleted = (courseId: string) => {
     setCourses((prev) => prev.filter((c) => c.id !== courseId))
-    // Forzar recarga inmediata
     setTimeout(() => {
       router.refresh()
       window.location.href = "/admin/courses"
@@ -109,6 +108,12 @@ export function AdminCoursesManager({ initialCourses }: AdminCoursesManagerProps
                     <span>{course.duration_hours} horas</span>
                   </div>
                 )}
+                {course.video_url && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Video className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-green-600">Video añadido</span>
+                  </div>
+                )}
               </div>
             </CardContent>
             <CardFooter>
@@ -160,6 +165,7 @@ function CreateCourseDialog({ onCreated }: { onCreated: (course: any) => void })
       description: formData.get("description") as string,
       short_description: formData.get("short_description") as string,
       image_url: formData.get("image_url") as string,
+      video_url: formData.get("video_url") as string,
       price_1_month: parseFloat(formData.get("price_1_month") as string) || 35000,
       price_4_months: parseFloat(formData.get("price_4_months") as string) || 140000,
       price_8_months: parseFloat(formData.get("price_8_months") as string) || 280000,
@@ -218,7 +224,15 @@ function CreateCourseDialog({ onCreated }: { onCreated: (course: any) => void })
 
           <div className="space-y-2">
             <Label htmlFor="image_url">URL de Imagen</Label>
-            <Input id="image_url" name="image_url" type="url" />
+            <Input id="image_url" name="image_url" type="url" placeholder="https://ejemplo.com/imagen.jpg" />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="video_url">URL del Video (YouTube/Vimeo)</Label>
+            <Input id="video_url" name="video_url" type="url" placeholder="https://www.youtube.com/embed/VIDEO_ID" />
+            <p className="text-xs text-muted-foreground">
+              Para YouTube usa: https://www.youtube.com/embed/VIDEO_ID
+            </p>
           </div>
 
           <div className="grid grid-cols-3 gap-4">
@@ -317,6 +331,7 @@ function EditCourseDialog({
       description: formData.get("description") as string,
       short_description: formData.get("short_description") as string,
       image_url: formData.get("image_url") as string,
+      video_url: formData.get("video_url") as string,
       price_1_month: parseFloat(formData.get("price_1_month") as string),
       price_4_months: parseFloat(formData.get("price_4_months") as string),
       price_8_months: parseFloat(formData.get("price_8_months") as string),
@@ -389,7 +404,22 @@ function EditCourseDialog({
               name="image_url"
               type="url"
               defaultValue={course.image_url || ""}
+              placeholder="https://ejemplo.com/imagen.jpg"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="edit-video_url">URL del Video (YouTube/Vimeo)</Label>
+            <Input
+              id="edit-video_url"
+              name="video_url"
+              type="url"
+              defaultValue={course.video_url || ""}
+              placeholder="https://www.youtube.com/embed/VIDEO_ID"
+            />
+            <p className="text-xs text-muted-foreground">
+              Para YouTube usa: https://www.youtube.com/embed/VIDEO_ID
+            </p>
           </div>
 
           <div className="grid grid-cols-3 gap-4">
