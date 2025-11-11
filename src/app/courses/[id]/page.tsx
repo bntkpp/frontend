@@ -123,10 +123,6 @@ export default async function CoursePage({ params }: { params: Promise<{ id: str
                       </span>
                     </div>
                   )}
-                  <div className="flex items-center gap-2">
-                    <Award className="h-5 w-5 text-primary" />
-                    <span>Certificado al finalizar</span>
-                  </div>
                 </div>
               </div>
 
@@ -261,10 +257,6 @@ export default async function CoursePage({ params }: { params: Promise<{ id: str
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="h-4 w-4 text-accent flex-shrink-0" />
                         <span>Material descargable</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-accent flex-shrink-0" />
-                        <span>Certificado digital</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="h-4 w-4 text-accent flex-shrink-0" />

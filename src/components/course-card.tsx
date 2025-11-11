@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Clock, BookOpen, TrendingUp } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { motion } from "framer-motion"
 
 interface CourseCardProps {
   id: string
@@ -48,27 +49,38 @@ export function CourseCard({
   const savings8Months = calculateSavings(price_1_month, price_8_months, 8)
 
   return (
-    <Card className="overflow-hidden flex flex-col h-full hover:shadow-lg transition-shadow">
-      <div className="relative h-48 w-full overflow-hidden bg-muted">
-        {image_url ? (
-          <Image
-            src={image_url}
-            alt={title}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          />
-        ) : (
-          <div className="flex items-center justify-center h-full">
-            <BookOpen className="h-16 w-16 text-muted-foreground" />
-          </div>
-        )}
-        {level && (
-          <Badge className="absolute top-2 right-2 capitalize">
-            {levelLabels[level] || level}
-          </Badge>
-        )}
-      </div>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.5 }}
+      whileHover={{ y: -5 }}
+    >
+      <Card className="overflow-hidden flex flex-col h-full hover:shadow-xl transition-shadow">
+        <motion.div 
+          className="relative h-48 w-full overflow-hidden bg-muted"
+          whileHover={{ scale: 1.05 }}
+          transition={{ duration: 0.3 }}
+        >
+          {image_url ? (
+            <Image
+              src={image_url}
+              alt={title}
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full">
+              <BookOpen className="h-16 w-16 text-muted-foreground" />
+            </div>
+          )}
+          {level && (
+            <Badge className="absolute top-2 right-2 capitalize">
+              {levelLabels[level] || level}
+            </Badge>
+          )}
+        </motion.div>
 
       <CardHeader>
         <CardTitle className="line-clamp-2">{title}</CardTitle>
@@ -158,5 +170,6 @@ export function CourseCard({
         </Button>
       </CardFooter>
     </Card>
+    </motion.div>
   )
 }
