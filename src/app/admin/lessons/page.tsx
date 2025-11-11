@@ -35,8 +35,10 @@ export default async function AdminLessonsPage() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Gestión de Lecciones</h1>
+        <div className="bg-gradient-to-r from-cyan-500/10 via-cyan-500/5 to-transparent p-6 rounded-xl border">
+          <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-cyan-600 to-cyan-500 bg-clip-text text-transparent">
+            Gestión de Lecciones
+          </h1>
           <p className="text-muted-foreground">Crea y organiza las lecciones de cada módulo</p>
         </div>
 

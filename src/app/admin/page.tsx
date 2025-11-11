@@ -117,55 +117,75 @@ export default async function AdminDashboardPage() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Panel de Administración</h1>
+        <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-6 rounded-xl border">
+          <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            Panel de Administración
+          </h1>
           <p className="text-muted-foreground">Vista general de la plataforma</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card>
+          <Card className="border-2 hover:border-primary/20 transition-all duration-200 overflow-hidden relative group">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Usuarios</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-sm">
+                <Users className="h-5 w-5 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{usersCount || 0}</div>
-              <p className="text-xs text-muted-foreground">Usuarios registrados</p>
+              <div className="text-3xl font-bold bg-gradient-to-br from-blue-600 to-blue-500 bg-clip-text text-transparent">
+                {usersCount || 0}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Usuarios registrados</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-2 hover:border-primary/20 transition-all duration-200 overflow-hidden relative group">
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Cursos</CardTitle>
-              <BookOpen className="h-4 w-4 text-muted-foreground" />
+              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-sm">
+                <BookOpen className="h-5 w-5 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{coursesCount || 0}</div>
-              <p className="text-xs text-muted-foreground">Cursos disponibles</p>
+              <div className="text-3xl font-bold bg-gradient-to-br from-purple-600 to-purple-500 bg-clip-text text-transparent">
+                {coursesCount || 0}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Cursos disponibles</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-2 hover:border-primary/20 transition-all duration-200 overflow-hidden relative group">
+            <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Inscripciones Activas</CardTitle>
-              <GraduationCap className="h-4 w-4 text-muted-foreground" />
+              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-sm">
+                <GraduationCap className="h-5 w-5 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{activeEnrollments.length}</div>
-              <p className="text-xs text-muted-foreground">Estudiantes activos</p>
+              <div className="text-3xl font-bold bg-gradient-to-br from-green-600 to-green-500 bg-clip-text text-transparent">
+                {activeEnrollments.length}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Estudiantes activos</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-2 hover:border-primary/20 transition-all duration-200 overflow-hidden relative group">
+            <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Ingresos Totales</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-sm">
+                <DollarSign className="h-5 w-5 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-3xl font-bold bg-gradient-to-br from-amber-600 to-amber-500 bg-clip-text text-transparent">
                 ${totalRevenue.toLocaleString("es-CL")}
               </div>
-              <p className="text-xs text-muted-foreground">Ingresos acumulados</p>
+              <p className="text-xs text-muted-foreground mt-1">Ingresos acumulados</p>
             </CardContent>
           </Card>
         </div>

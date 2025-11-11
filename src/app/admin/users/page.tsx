@@ -59,6 +59,12 @@ export default async function AdminUsersPage() {
   return (
     <AdminLayout>
       <div className="space-y-6">
+        <div className="bg-gradient-to-r from-blue-500/10 via-blue-500/5 to-transparent p-6 rounded-xl border">
+          <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
+            Gestión de Usuarios
+          </h1>
+          <p className="text-muted-foreground">Administra los usuarios de la plataforma</p>
+        </div>
         <div>
           <h1 className="text-3xl font-bold mb-2">Gestión de Usuarios</h1>
           <p className="text-muted-foreground">Administra todos los usuarios de la plataforma</p>

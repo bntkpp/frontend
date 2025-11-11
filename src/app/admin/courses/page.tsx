@@ -27,7 +27,15 @@ export default async function AdminCoursesPage() {
 
     return (
       <AdminLayout>
-        <AdminCoursesManager initialCourses={courses || []} />
+        <div className="space-y-6">
+          <div className="bg-gradient-to-r from-purple-500/10 via-purple-500/5 to-transparent p-6 rounded-xl border">
+            <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent">
+              Gestión de Cursos
+            </h1>
+            <p className="text-muted-foreground">Administra el catálogo de cursos</p>
+          </div>
+          <AdminCoursesManager initialCourses={courses || []} />
+        </div>
       </AdminLayout>
     )
   } catch (error) {

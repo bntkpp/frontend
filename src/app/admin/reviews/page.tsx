@@ -30,8 +30,10 @@ export default async function AdminReviewsPage() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Gestión de Reseñas</h1>
+        <div className="bg-gradient-to-r from-pink-500/10 via-pink-500/5 to-transparent p-6 rounded-xl border">
+          <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-pink-600 to-pink-500 bg-clip-text text-transparent">
+            Gestión de Reseñas
+          </h1>
           <p className="text-muted-foreground">Revisa todas las reseñas de los cursos</p>
         </div>
 

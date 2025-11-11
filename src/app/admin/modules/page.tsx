@@ -32,8 +32,10 @@ export default async function AdminModulesPage() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Gestión de Módulos</h1>
+        <div className="bg-gradient-to-r from-indigo-500/10 via-indigo-500/5 to-transparent p-6 rounded-xl border">
+          <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-indigo-600 to-indigo-500 bg-clip-text text-transparent">
+            Gestión de Módulos
+          </h1>
           <p className="text-muted-foreground">Administra los módulos asociados a cada curso</p>
         </div>
 
