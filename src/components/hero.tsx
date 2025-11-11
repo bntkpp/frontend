@@ -1,28 +1,61 @@
+"use client"
+
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { ArrowRight, GraduationCap } from "lucide-react"
+import { motion } from "framer-motion"
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden bg-background py-20 md:py-32">
-      <div className="container mx-auto px-4">
+    <section className="relative overflow-hidden bg-gradient-to-b from-background via-background to-muted/30 py-20 md:py-32">
+      {/* Efectos de fondo */}
+      <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:50px_50px]" />
+      <div className="absolute top-1/4 -left-48 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute bottom-1/4 -right-48 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+      
+      <div className="container mx-auto px-4 relative">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div className="space-y-6">
-            <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary">
+          <motion.div 
+            className="space-y-6"
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <motion.div 
+              className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+            >
               <GraduationCap className="h-4 w-4" />
               Plataforma Educativa Online
-            </div>
+            </motion.div>
 
-            <h1 className="text-4xl md:text-5xl font-bold text-balance leading-tight">
+            <motion.h1 
+              className="text-4xl md:text-5xl font-bold text-balance leading-tight"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.6 }}
+            >
               Prepárate para tus <span className="text-primary">Exámenes Libres</span> con Confianza
-            </h1>
+            </motion.h1>
 
-            <p className="text-lg text-muted-foreground text-balance leading-relaxed">
+            <motion.p 
+              className="text-lg text-muted-foreground text-balance leading-relaxed"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4, duration: 0.6 }}
+            >
               Accede a cursos completos, material de estudio actualizado y apoyo personalizado para alcanzar tus
               objetivos académicos.
-            </p>
+            </motion.p>
 
-            <div className="flex flex-col sm:flex-row gap-4">
+            <motion.div 
+              className="flex flex-col sm:flex-row gap-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 0.6 }}
+            >
               <Button size="lg" asChild className="text-base">
                 <Link href="#courses">
                   Explorar Cursos
@@ -32,24 +65,31 @@ export function Hero() {
               <Button size="lg" variant="outline" asChild className="text-base bg-transparent">
                 <Link href="/auth/sign-up">Comenzar Gratis</Link>
               </Button>
-            </div>
+            </motion.div>
 
-            <div className="flex flex-wrap gap-8 pt-4 text-sm text-muted-foreground">
+            <motion.div 
+              className="flex flex-wrap gap-8 pt-4 text-sm text-muted-foreground"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.6, duration: 0.6 }}
+            >
               <div className="flex flex-col gap-1">
                 <span className="text-2xl font-bold text-foreground">+2,200</span>
                 <span>Estudiantes</span>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-2xl font-bold text-foreground">20+</span>
+                <span className="text-2xl font-bold text-foreground">5+</span>
                 <span>Cursos</span>
               </div>
-              <div className="flex items-center gap-1">
-                <span className="text-sm">Validación oficial MINEDUC</span>
-              </div>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
 
-          <div className="relative">
+          <motion.div 
+            className="relative"
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+          >
             <div className="aspect-video w-full rounded-xl overflow-hidden shadow-2xl border border-border">
               <iframe
                 src="https://www.youtube.com/embed/0NUo6CJOWtY"
@@ -59,7 +99,7 @@ export function Hero() {
                 title="Introducción a Paidek"
               />
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
     </section>

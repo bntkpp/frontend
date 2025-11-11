@@ -1,5 +1,8 @@
+"use client"
+
 import { BookOpen, Users, Award, Clock, FileCheck } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
+import { motion } from "framer-motion"
 
 const features = [
 	{
@@ -27,11 +30,32 @@ const features = [
 	},
 ]
 
+const container = {
+	hidden: { opacity: 0 },
+	show: {
+		opacity: 1,
+		transition: {
+			staggerChildren: 0.2
+		}
+	}
+}
+
+const item = {
+	hidden: { opacity: 0, y: 20 },
+	show: { opacity: 1, y: 0 }
+}
+
 export function Features() {
 	return (
 		<section id="about" className="py-20 bg-muted/30">
 			<div className="container mx-auto px-4">
-				<div className="text-center mb-12">
+				<motion.div 
+					className="text-center mb-12"
+					initial={{ opacity: 0, y: -20 }}
+					whileInView={{ opacity: 1, y: 0 }}
+					viewport={{ once: true }}
+					transition={{ duration: 0.6 }}
+				>
 					<h2 className="text-3xl md:text-4xl font-bold mb-4 text-balance">
 						¿Por qué elegir Paidek?
 					</h2>
@@ -39,25 +63,37 @@ export function Features() {
 						Ofrecemos una experiencia de aprendizaje completa diseñada para tu éxito
 						académico
 					</p>
-				</div>
+				</motion.div>
 
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+				<motion.div 
+					className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+					variants={container}
+					initial="hidden"
+					whileInView="show"
+					viewport={{ once: true }}
+				>
 					{features.map((feature, index) => (
-						<Card key={index} className="border-border">
-							<CardContent className="pt-6">
-								<div className="flex flex-col items-center text-center gap-4">
-									<div className="rounded-full bg-primary/10 p-3">
-										<feature.icon className="h-6 w-6 text-primary" />
+						<motion.div key={index} variants={item}>
+							<Card className="border-border h-full hover:shadow-lg transition-shadow hover:-translate-y-1 duration-300">
+								<CardContent className="pt-6">
+									<div className="flex flex-col items-center text-center gap-4">
+										<motion.div 
+											className="rounded-full bg-primary/10 p-3"
+											whileHover={{ scale: 1.1, rotate: 5 }}
+											transition={{ type: "spring", stiffness: 300 }}
+										>
+											<feature.icon className="h-6 w-6 text-primary" />
+										</motion.div>
+										<h3 className="text-xl font-semibold">{feature.title}</h3>
+										<p className="text-muted-foreground text-sm leading-relaxed">
+											{feature.description}
+										</p>
 									</div>
-									<h3 className="text-xl font-semibold">{feature.title}</h3>
-									<p className="text-muted-foreground text-sm leading-relaxed">
-										{feature.description}
-									</p>
-								</div>
-							</CardContent>
-						</Card>
+								</CardContent>
+							</Card>
+						</motion.div>
 					))}
-				</div>
+				</motion.div>
 			</div>
 		</section>
 	)
