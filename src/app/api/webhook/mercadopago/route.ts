@@ -40,12 +40,6 @@ export async function POST(req: Request) {
 
     const { type, data, action } = body;
 
-    // MercadoPago puede enviar diferentes tipos de eventos
-    if (type !== "payment" && action !== "payment.created" && action !== "payment.updated") {
-      console.log("⏭️ No es evento de pago, se ignora. Type:", type, "Action:", action);
-      return NextResponse.json({ received: true });
-    }
-
     const paymentId = data?.id;
     if (!paymentId) {
       console.log("❌ Sin paymentId");
