@@ -10,6 +10,10 @@ import "./globals.css"
 export const metadata: Metadata = {
   title: "Paidek - Plataforma Educativa",
   description: "Preparación para exámenes libres",
+  icons: {
+    icon: '/logo.png',
+    apple: '/logo.png',
+  },
 }
 
 export default function RootLayout({

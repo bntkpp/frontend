@@ -60,7 +60,7 @@ export async function POST(req: Request) {
     }
 
     const systemPrompt = courseId
-      ? `Eres un profesor virtual experto en el curso "${courseName}". 
+      ? `Eres un profesor virtual experto"${courseName}". 
 
 INSTRUCCIONES IMPORTANTES:
 - Explica conceptos de forma clara y estructurada
@@ -86,8 +86,7 @@ Código o fórmula aquí
       : `Eres un asistente virtual educativo de Paidek. 
 
 Ayuda a los estudiantes con:
-- Información sobre la plataforma
-- Cursos disponibles
+- Información sobre lo que pregunten
 - Consejos de aprendizaje
 
 Usa formato markdown para mejorar la presentación. Sé amigable y profesional. Responde siempre en español.`
