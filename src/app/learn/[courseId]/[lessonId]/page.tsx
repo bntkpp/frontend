@@ -1,11 +1,7 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { CourseSidebar } from "@/components/course-sidebar"
-import { LessonContent } from "@/components/lesson-content"
-import { ReviewForm } from "@/components/review-form"
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
-import { ArrowLeft } from "lucide-react"
+import { LessonPageClient } from "@/components/lesson-page-client"
 
 export default async function LessonPage({
   params,
@@ -55,73 +51,69 @@ export default async function LessonPage({
   const { data: progressData } = await supabase.from("progress").select("*").eq("user_id", user.id)
 
   // Calculate progress
-  const allLessons = modules?.flatMap((m) => m.lessons) || []
-  const completedLessons = progressData?.filter((p) => p.completed).length || 0
-  const progressPercentage = allLessons.length > 0 ? Math.round((completedLessons / allLessons.length) * 100) : 0
+  const allLessons = modules?.flatMap((module) => module.lessons) || []
+  const completedLessonIds = progressData?.filter((record) => record.completed).map((record) => record.lesson_id) || []
+  const progressPercentage = allLessons.length > 0 ? Math.round((completedLessonIds.length / allLessons.length) * 100) : 0
 
   // Check if current lesson is completed
   const isLessonCompleted = progressData?.some((p) => p.lesson_id === lessonId && p.completed) || false
 
   // Check if course is completed
-  const isCourseCompleted = progressPercentage === 100
+  const isCourseCompleted = allLessons.length > 0 && completedLessonIds.length === allLessons.length
 
-  // Check if user has already reviewed
   const { data: existingReview } = await supabase
     .from("reviews")
-    .select("*")
+    .select("id")
     .eq("user_id", user.id)
     .eq("course_id", courseId)
-    .single()
+    .maybeSingle()
 
-  // Format modules with progress
-  const modulesWithProgress = modules?.map((module) => ({
+  // Format modules with lessons
+  const modulesWithLessons = modules?.map((module) => ({
     ...module,
     lessons: module.lessons
-      .sort((a, b) => a.order_index - b.order_index)
-      .map((l) => ({
+      .sort((a: any, b: any) => (a.order_index || 0) - (b.order_index || 0))
+      .map((l: any) => ({
         ...l,
         completed: progressData?.some((p) => p.lesson_id === l.id && p.completed) || false,
       })),
   }))
 
+  // Find previous and next lessons
+  let previousLesson = null
+  let nextLesson = null
+  
+  for (let i = 0; i < allLessons.length; i++) {
+    if (allLessons[i].id === lessonId) {
+      if (i > 0) {
+        previousLesson = allLessons[i - 1]
+      }
+      if (i < allLessons.length - 1) {
+        nextLesson = allLessons[i + 1]
+      }
+      break
+    }
+  }
+
   return (
-    <div className="flex min-h-screen">
-      <CourseSidebar courseId={courseId} modules={modulesWithProgress || []} progress={progressPercentage} />
-      <main className="flex-1 p-6 md:p-8 overflow-y-auto">
-        <div className="max-w-4xl mx-auto space-y-6">
-          <Button variant="ghost" asChild>
-            <Link href="/dashboard">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Volver al Dashboard
-            </Link>
-          </Button>
-
-          <div className="text-sm text-muted-foreground">
-            <Link href={`/courses/${courseId}`} className="hover:text-foreground">
-              {course?.title}
-            </Link>
-          </div>
-
-          <LessonContent
-            lesson={lesson}
-            isCompleted={isLessonCompleted}
-            userId={user.id}
-            onComplete={() => {
-              // Refresh the page to update progress
-              window.location.reload()
-            }}
-          />
-
-          {isCourseCompleted && !existingReview && (
-            <ReviewForm
-              courseId={courseId}
-              userId={user.id}
-              onReviewSubmitted={() => {
-                window.location.reload()
-              }}
-            />
-          )}
-        </div>
+    <div className="flex h-screen overflow-hidden">
+      <CourseSidebar 
+        courseId={courseId} 
+        modules={modulesWithLessons || []} 
+        progress={progressPercentage} 
+      />
+      <main className="flex-1 flex flex-col h-screen overflow-hidden">
+        <LessonPageClient
+          courseId={courseId}
+          courseTitle={course?.title || ""}
+          lesson={lesson}
+          isLessonCompleted={isLessonCompleted}
+          isCourseCompleted={isCourseCompleted}
+          hasExistingReview={!!existingReview}
+          userId={user.id}
+          previousLesson={previousLesson}
+          nextLesson={nextLesson}
+        />
       </main>
     </div>
   )
