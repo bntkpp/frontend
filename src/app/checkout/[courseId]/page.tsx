@@ -103,14 +103,26 @@ export default function CheckoutPage() {
     }
   }
 
+  const getOriginalPrice = (plan: Plan) => {
+    switch (plan) {
+      case "1_month":
+        return 60000
+      case "4_months":
+        return 240000
+      case "8_months":
+        return 480000
+      default:
+        return 60000
+    }
+  }
+
   const calculateSavings = (plan: Plan) => {
-    if (!course || plan === "1_month") return null
+    if (!course) return null
     
-    const months = planDurations[plan]
-    const regularTotal = course.price_1_month * months
     const planPrice = getPlanPrice(plan)
-    const savings = regularTotal - planPrice
-    const savingsPercent = Math.round((savings / regularTotal) * 100)
+    const originalPrice = getOriginalPrice(plan)
+    const savings = originalPrice - planPrice
+    const savingsPercent = Math.round((savings / originalPrice) * 100)
     
     return { savings, savingsPercent }
   }
@@ -209,18 +221,26 @@ export default function CheckoutPage() {
                     {/* Plan 1 Mes */}
                     <button
                       onClick={() => setSelectedPlan("1_month")}
-                      className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
+                      className={`w-full p-4 rounded-lg border-2 transition-all text-left relative ${
                         selectedPlan === "1_month"
                           ? "border-primary bg-primary/5"
                           : "border-border hover:border-primary/50"
                       }`}
                     >
+                      {calculateSavings("1_month") && (
+                        <Badge className="absolute -top-2 -right-2 bg-green-600 hover:bg-green-700">
+                          Ahorra {calculateSavings("1_month")!.savingsPercent}%
+                        </Badge>
+                      )}
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="font-semibold">Plan Mensual</p>
                           <p className="text-sm text-muted-foreground">Renovación mensual</p>
                         </div>
                         <div className="text-right">
+                          <p className="text-sm text-muted-foreground line-through">
+                            ${(60000).toLocaleString("es-CL")}
+                          </p>
                           <p className="text-2xl font-bold">${course.price_1_month.toLocaleString("es-CL")}</p>
                           <p className="text-xs text-muted-foreground">/mes</p>
                         </div>
@@ -249,6 +269,9 @@ export default function CheckoutPage() {
                           </p>
                         </div>
                         <div className="text-right">
+                          <p className="text-sm text-muted-foreground line-through">
+                            ${(240000).toLocaleString("es-CL")}
+                          </p>
                           <p className="text-2xl font-bold">${course.price_4_months.toLocaleString("es-CL")}</p>
                           <p className="text-xs text-muted-foreground">Pago único</p>
                         </div>
@@ -277,6 +300,9 @@ export default function CheckoutPage() {
                           </p>
                         </div>
                         <div className="text-right">
+                          <p className="text-sm text-muted-foreground line-through">
+                            ${(480000).toLocaleString("es-CL")}
+                          </p>
                           <p className="text-2xl font-bold">${course.price_8_months.toLocaleString("es-CL")}</p>
                           <p className="text-xs text-muted-foreground">Pago único</p>
                         </div>
@@ -299,10 +325,6 @@ export default function CheckoutPage() {
                     <div className="flex items-center gap-2">
                       <CheckCircle2 className="h-5 w-5 text-accent" />
                       <span>Material descargable</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="h-5 w-5 text-accent" />
-                      <span>Certificado digital al finalizar</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <CheckCircle2 className="h-5 w-5 text-accent" />
