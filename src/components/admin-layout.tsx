@@ -13,10 +13,11 @@ import {
   LogOut,
   Settings,
   Home,
-  CreditCard, // Agregar este icono
+  CreditCard,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { motion } from "framer-motion"
 
 const navigation = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
@@ -25,7 +26,7 @@ const navigation = [
   { name: "Módulos", href: "/admin/modules", icon: FileText },
   { name: "Lecciones", href: "/admin/lessons", icon: FileText },
   { name: "Inscripciones", href: "/admin/enrollments", icon: GraduationCap },
-  { name: "Pagos", href: "/admin/payments", icon: CreditCard }, // Agregar esta línea
+  { name: "Pagos", href: "/admin/payments", icon: CreditCard },
   { name: "Reseñas", href: "/admin/reviews", icon: Settings },
 ]
 
@@ -33,15 +34,18 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex bg-muted/30">
       {/* Sidebar */}
-      <aside className="w-64 bg-card border-r flex flex-col">
-        <div className="p-6 border-b">
-          <Link href="/admin" className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold">P</span>
+      <aside className="w-64 bg-card border-r flex flex-col shadow-sm">
+        <div className="p-6 border-b bg-gradient-to-br from-primary/5 to-transparent">
+          <Link href="/admin" className="flex items-center gap-2 group">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-md transition-transform group-hover:scale-105">
+              <span className="text-primary-foreground font-bold text-lg">P</span>
             </div>
-            <span className="font-bold text-xl">Paidek Admin</span>
+            <div>
+              <span className="font-bold text-xl block">Paidek</span>
+              <span className="text-xs text-muted-foreground">Panel Admin</span>
+            </div>
           </Link>
         </div>
 
@@ -54,9 +58,9 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                 key={item.name}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
                   isActive
-                    ? "bg-primary text-primary-foreground"
+                    ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
               >
@@ -67,15 +71,15 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        <div className="p-4 border-t space-y-2">
-          <Button asChild variant="ghost" className="w-full justify-start">
+        <div className="p-4 border-t bg-muted/50 space-y-2">
+          <Button asChild variant="ghost" className="w-full justify-start hover:bg-background transition-colors">
             <Link href="/">
               <Home className="h-5 w-5 mr-3" />
               Ir al sitio
             </Link>
           </Button>
           <form action="/auth/signout" method="post">
-            <Button type="submit" variant="ghost" className="w-full justify-start text-red-600">
+            <Button type="submit" variant="ghost" className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors">
               <LogOut className="h-5 w-5 mr-3" />
               Cerrar sesión
             </Button>
