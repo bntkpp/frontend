@@ -16,9 +16,11 @@ interface Course {
   description: string
   short_description: string | null
   image_url: string | null
-  price_1_month: number
-  price_4_months: number
-  price_8_months: number
+  payment_type: string | null
+  one_time_price: number | null
+  price_1_month: number | null
+  price_4_months: number | null
+  price_8_months: number | null
   duration_hours: number | null
   level: string | null
   published: boolean
@@ -73,7 +75,8 @@ export function CoursePreview() {
     )
   }
 
-  const calculateSavings = (monthlyPrice: number, totalPrice: number, months: number) => {
+  const calculateSavings = (monthlyPrice: number | null, totalPrice: number | null, months: number) => {
+    if (!monthlyPrice || !totalPrice) return 0
     const regularTotal = monthlyPrice * months
     const savings = regularTotal - totalPrice
     const savingsPercent = Math.round((savings / regularTotal) * 100)
@@ -107,6 +110,7 @@ export function CoursePreview() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {courses.map((course, index) => {
+            const isOneTimePayment = course.payment_type === "one_time" || !!course.one_time_price
             const savings4Months = calculateSavings(course.price_1_month, course.price_4_months, 4)
             const savings8Months = calculateSavings(course.price_1_month, course.price_8_months, 8)
             const bestSavings = Math.max(savings4Months, savings8Months)
@@ -170,23 +174,32 @@ export function CoursePreview() {
 
                   <CardFooter className="flex flex-col gap-3 pt-0 bg-muted/30 group-hover:bg-muted/50 transition-colors duration-200">
                     <div className="w-full">
-                      <div className="flex items-baseline justify-between mb-2">
-                        <div>
-                          <span className="text-sm text-muted-foreground">Desde</span>
-                          <p className="text-2xl font-bold text-primary">
-                            ${course.price_1_month.toLocaleString("es-CL")}
-                            <span className="text-sm font-normal text-muted-foreground">/mes</span>
+                      {isOneTimePayment ? (
+                        <div className="mb-2">
+                          <p className="text-2xl font-bold text-primary text-center">
+                            ${course.one_time_price?.toLocaleString("es-CL")}
                           </p>
+                          <p className="text-sm text-muted-foreground text-center mt-1">Pago único</p>
                         </div>
-                        {course.price_4_months && (
-                          <div className="text-right">
-                            <p className="text-sm text-muted-foreground">Plan 4 meses</p>
-                            <p className="text-lg font-semibold">
-                              ${(course.price_4_months).toLocaleString("es-CL")}
+                      ) : (
+                        <div className="flex items-baseline justify-between mb-2">
+                          <div>
+                            <span className="text-sm text-muted-foreground">Desde</span>
+                            <p className="text-2xl font-bold text-primary">
+                              ${course.price_1_month?.toLocaleString("es-CL")}
+                              <span className="text-sm font-normal text-muted-foreground">/mes</span>
                             </p>
                           </div>
-                        )}
-                      </div>
+                          {course.price_4_months && (
+                            <div className="text-right">
+                              <p className="text-sm text-muted-foreground">Plan 4 meses</p>
+                              <p className="text-lg font-semibold">
+                                ${(course.price_4_months).toLocaleString("es-CL")}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                     
                     <Button asChild className="w-full transition-all duration-200">
