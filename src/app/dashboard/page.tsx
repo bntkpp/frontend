@@ -2,7 +2,7 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { BookOpen, Award, Clock, TrendingUp } from "lucide-react"
+import { BookOpen, Clock, TrendingUp } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
@@ -39,12 +39,6 @@ export default async function DashboardPage() {
     return true
   }) || []
 
-  // Get total certificates
-  const { count: certificatesCount } = await supabase
-    .from("certificates")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", user.id)
-
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -53,7 +47,7 @@ export default async function DashboardPage() {
           <p className="text-muted-foreground">Aquí puedes ver tu progreso y gestionar tus cursos</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Cursos Activos</CardTitle>
@@ -83,17 +77,6 @@ export default async function DashboardPage() {
               <p className="text-xs text-muted-foreground">En todos tus cursos</p>
             </CardContent>
           </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Certificados</CardTitle>
-              <Award className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{certificatesCount || 0}</div>
-              <p className="text-xs text-muted-foreground">Certificados obtenidos</p>
-            </CardContent>
-          </Card>
         </div>
 
         <div className="space-y-4">
@@ -107,18 +90,22 @@ export default async function DashboardPage() {
           {enrollments && enrollments.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {enrollments.map((enrollment) => (
-                <Card key={enrollment.id} className="overflow-hidden">
-                  <div className="aspect-video relative bg-muted">
-                    {enrollment.courses?.image_url && (
+                <Card key={enrollment.id} className="overflow-hidden flex flex-col h-full">
+                  <div className="h-56 relative bg-muted flex-shrink-0 overflow-hidden">
+                    {enrollment.courses?.image_url ? (
                       <img
                         src={enrollment.courses.image_url}
                         alt={enrollment.courses.title}
                         className="object-cover w-full h-full"
                       />
+                    ) : (
+                      <div className="flex items-center justify-center h-full">
+                        <BookOpen className="h-12 w-12 text-muted-foreground" />
+                      </div>
                     )}
                   </div>
-                  <CardHeader>
-                    <CardTitle className="line-clamp-2">{enrollment.courses?.title}</CardTitle>
+                  <CardHeader className="flex-shrink-0">
+                    <CardTitle className="line-clamp-2 min-h-[3.5rem]">{enrollment.courses?.title}</CardTitle>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Clock className="h-4 w-4" />
                       <span>
@@ -128,7 +115,7 @@ export default async function DashboardPage() {
                       </span>
                     </div>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent className="space-y-4 flex-1 flex flex-col justify-end">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">Progreso</span>
@@ -139,7 +126,7 @@ export default async function DashboardPage() {
                       <Progress value={enrollment.progress_percentage || 0} />
                     </div>
                     <Button asChild className="w-full">
-                      <Link href={`/courses/${enrollment.course_id}`}>
+                      <Link href={`/learn/${enrollment.course_id}`}>
                         {enrollment.progress_percentage > 0 ? "Continuar" : "Comenzar"}
                       </Link>
                     </Button>

@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { BookOpen, CreditCard, Award, User, LogOut, Home } from "lucide-react"
+import { BookOpen, CreditCard, User, LogOut, Home } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
@@ -10,7 +10,6 @@ import { useRouter } from "next/navigation"
 const navItems = [
   { href: "/dashboard", label: "Mis Cursos", icon: BookOpen },
   { href: "/dashboard/payments", label: "Pagos", icon: CreditCard },
-  { href: "/dashboard/certificates", label: "Certificados", icon: Award },
   { href: "/dashboard/profile", label: "Perfil", icon: User },
 ]
 
