@@ -8,7 +8,9 @@ import { Button } from "@/components/ui/button"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle2, CreditCard, TrendingUp } from "lucide-react"
+import { CheckCircle2, CreditCard, TrendingUp, FileQuestion } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
 
 type Plan = "1_month" | "4_months" | "8_months"
 
@@ -33,6 +35,7 @@ export default function CheckoutPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isProcessing, setIsProcessing] = useState(false)
   const [selectedPlan, setSelectedPlan] = useState<Plan>("4_months")
+  const [includePreguntasAdicionales, setIncludePreguntasAdicionales] = useState(false)
 
   useEffect(() => {
     // Get plan from URL or default to 4 months
@@ -133,6 +136,8 @@ export default function CheckoutPage() {
     try {
       const planPrice = getPlanPrice(selectedPlan)
       const planMonths = planDurations[selectedPlan]
+      const addonPrice = includePreguntasAdicionales && course.has_questions_pack ? (course.questions_pack_price || 0) : 0
+      const totalPrice = planPrice + addonPrice
 
       // Create payment preference
       const response = await fetch("/api/create-preference", {
@@ -146,6 +151,9 @@ export default function CheckoutPage() {
           plan: selectedPlan,
           price: planPrice,
           months: planMonths,
+          includeQuestions: includePreguntasAdicionales && course.has_questions_pack,
+          questionsPrice: addonPrice,
+          totalPrice: totalPrice,
         }),
       })
 
@@ -179,6 +187,8 @@ export default function CheckoutPage() {
 
   const currentPrice = getPlanPrice(selectedPlan)
   const savings = calculateSavings(selectedPlan)
+  const addonPrice = course.has_questions_pack ? (course.questions_pack_price || 0) : 0
+  const totalPrice = currentPrice + (includePreguntasAdicionales ? addonPrice : 0)
 
   return (
     <main className="min-h-screen flex flex-col">
@@ -312,6 +322,86 @@ export default function CheckoutPage() {
                 </CardContent>
               </Card>
 
+              {course.has_questions_pack && (
+                <Card className="mt-6 relative overflow-hidden border-2 border-primary shadow-lg">
+                  
+                  {/* Fondo decorativo */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-primary/5 to-transparent dark:from-blue-950/30 dark:via-primary/10 dark:to-transparent" />
+                  
+                  <CardContent className="relative pt-6 pb-6">
+                    <div className="flex gap-4">
+                      {/* Icono grande y atractivo */}
+                      <div className="flex-shrink-0">
+                        <div className="w-16 h-16 bg-gradient-to-br from-primary to-blue-600 rounded-2xl flex items-center justify-center shadow-lg transform hover:scale-105 transition-transform">
+                          <FileQuestion className="h-8 w-8 text-white" />
+                        </div>
+                      </div>
+
+                      {/* Contenido principal */}
+                      <div className="flex-1 space-y-3">
+                        <div>
+                          <h3 className="text-xl font-bold text-primary mb-1">
+                            Banco de Preguntas Tipo Prueba
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            Más de 500 preguntas diseñadas por expertos para maximizar tu preparación
+                          </p>
+                        </div>
+
+                        {/* Beneficios destacados */}
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="flex items-center gap-2 bg-white/50 dark:bg-gray-900/50 rounded-lg p-2 border border-primary/10">
+                            <div className="w-1.5 h-1.5 bg-primary rounded-full" />
+                            <span className="text-xs font-medium">Práctica ilimitada</span>
+                          </div>
+                          <div className="flex items-center gap-2 bg-white/50 dark:bg-gray-900/50 rounded-lg p-2 border border-primary/10">
+                            <div className="w-1.5 h-1.5 bg-primary rounded-full" />
+                            <span className="text-xs font-medium">Explicaciones detalladas</span>
+                          </div>
+                          <div className="flex items-center gap-2 bg-white/50 dark:bg-gray-900/50 rounded-lg p-2 border border-primary/10">
+                            <div className="w-1.5 h-1.5 bg-primary rounded-full" />
+                            <span className="text-xs font-medium">Actualizado 2025</span>
+                          </div>
+                        </div>
+
+                        {/* Testimonial mini */}
+                        <div className="bg-white dark:bg-gray-900 rounded-lg p-3 border border-primary/20 shadow-sm">
+                          <p className="text-xs italic text-muted-foreground mb-1">
+                            "El banco de preguntas fue fundamental para aprobar. Las preguntas son muy similares a las del examen real."
+                          </p>
+                          <p className="text-xs font-semibold text-primary">— Matías D.</p>
+                        </div>
+
+                        {/* Call to action */}
+                        <div className="flex items-center justify-between pt-2">
+                          <div className="flex items-center gap-3">
+                            <Checkbox
+                              id="preguntas-adicionales"
+                              checked={includePreguntasAdicionales}
+                              onCheckedChange={(checked) => setIncludePreguntasAdicionales(checked as boolean)}
+                              className="data-[state=checked]:bg-primary data-[state=checked]:border-primary w-5 h-5"
+                            />
+                            <Label htmlFor="preguntas-adicionales" className="cursor-pointer">
+                              <span className="text-sm font-semibold text-foreground">
+                                Agregar al carrito
+                              </span>
+                            </Label>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs text-muted-foreground line-through">
+                              ${(addonPrice * 1.4).toLocaleString("es-CL")}
+                            </p>
+                            <p className="text-2xl font-bold text-primary">
+                              +${addonPrice.toLocaleString("es-CL")}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               <Card className="mt-6">
                 <CardHeader>
                   <CardTitle>Lo que incluye</CardTitle>
@@ -377,11 +467,24 @@ export default function CheckoutPage() {
                     </div>
                   )}
 
+                  {includePreguntasAdicionales && course.has_questions_pack && (
+                    <div className="border-t border-border pt-4 space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Curso ({planLabels[selectedPlan]})</span>
+                        <span className="font-medium">${currentPrice.toLocaleString("es-CL")}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm bg-primary/10 dark:bg-primary/20 px-3 py-2 rounded-lg border border-primary/20">
+                        <span className="text-primary font-medium"> Banco de Preguntas </span>
+                        <span className="font-bold text-primary">${addonPrice.toLocaleString("es-CL")}</span>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="border-t border-border pt-4">
                     <div className="flex items-center justify-between mb-4">
                       <span className="font-semibold">Total a Pagar</span>
                       <span className="text-2xl font-bold text-primary">
-                        ${currentPrice.toLocaleString("es-CL")}
+                        ${totalPrice.toLocaleString("es-CL")}
                       </span>
                     </div>
                     <Button className="w-full" size="lg" onClick={handlePayment} disabled={isProcessing}>
