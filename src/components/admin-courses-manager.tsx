@@ -9,6 +9,40 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
+
+// Function to convert YouTube URLs to embed format
+function convertToYouTubeEmbed(url: string): string {
+  if (!url) return ""
+  
+  // Already in embed format
+  if (url.includes("/embed/")) return url
+  
+  // Extract video ID from various YouTube URL formats
+  let videoId = ""
+  
+  // youtu.be/VIDEO_ID
+  if (url.includes("youtu.be/")) {
+    videoId = url.split("youtu.be/")[1]?.split("?")[0]
+  }
+  // youtube.com/watch?v=VIDEO_ID
+  else if (url.includes("youtube.com/watch")) {
+    const urlParams = new URLSearchParams(url.split("?")[1])
+    videoId = urlParams.get("v") || ""
+  }
+  // youtube.com/v/VIDEO_ID
+  else if (url.includes("youtube.com/v/")) {
+    videoId = url.split("/v/")[1]?.split("?")[0]
+  }
+  
+  // If we found a video ID, return embed URL
+  if (videoId) {
+    return `https://www.youtube.com/embed/${videoId}`
+  }
+  
+  // Return original URL if not a YouTube link
+  return url
+}
+
 import {
   Dialog,
   DialogContent,
@@ -162,13 +196,14 @@ function CreateCourseDialog({ onCreated }: { onCreated: (course: any) => void })
     const formData = new FormData(event.currentTarget)
 
     const paymentType = formData.get("payment_type") as string
+    const videoUrl = formData.get("video_url") as string
 
     const payload = {
       title: formData.get("title") as string,
       description: formData.get("description") as string,
       short_description: formData.get("short_description") as string,
       image_url: formData.get("image_url") as string,
-      video_url: formData.get("video_url") as string,
+      video_url: convertToYouTubeEmbed(videoUrl),
       payment_type: paymentType,
       one_time_price: paymentType === "one_time" ? parseFloat(formData.get("one_time_price") as string) || null : null,
       price_1_month: paymentType === "subscription" ? parseFloat(formData.get("price_1_month") as string) || null : null,
@@ -236,9 +271,9 @@ function CreateCourseDialog({ onCreated }: { onCreated: (course: any) => void })
 
           <div className="space-y-2">
             <Label htmlFor="video_url">URL del Video (YouTube/Vimeo)</Label>
-            <Input id="video_url" name="video_url" type="url" placeholder="https://www.youtube.com/embed/VIDEO_ID" />
+            <Input id="video_url" name="video_url" type="url" placeholder="https://www.youtube.com/watch?v=VIDEO_ID o https://youtu.be/VIDEO_ID" />
             <p className="text-xs text-muted-foreground">
-              Para YouTube usa: https://www.youtube.com/embed/VIDEO_ID
+              Pega cualquier link de YouTube y se convertirá automáticamente al formato correcto
             </p>
           </div>
 
@@ -385,13 +420,14 @@ function EditCourseDialog({
     const formData = new FormData(event.currentTarget)
 
     const currentPaymentType = formData.get("payment_type") as string
+    const videoUrl = formData.get("video_url") as string
 
     const payload = {
       title: formData.get("title") as string,
       description: formData.get("description") as string,
       short_description: formData.get("short_description") as string,
       image_url: formData.get("image_url") as string,
-      video_url: formData.get("video_url") as string,
+      video_url: convertToYouTubeEmbed(videoUrl),
       payment_type: currentPaymentType,
       one_time_price: currentPaymentType === "one_time" ? parseFloat(formData.get("one_time_price") as string) || null : null,
       price_1_month: currentPaymentType === "subscription" ? parseFloat(formData.get("price_1_month") as string) || null : null,
@@ -479,10 +515,10 @@ function EditCourseDialog({
               name="video_url"
               type="url"
               defaultValue={course.video_url || ""}
-              placeholder="https://www.youtube.com/embed/VIDEO_ID"
+              placeholder="https://www.youtube.com/watch?v=VIDEO_ID o https://youtu.be/VIDEO_ID"
             />
             <p className="text-xs text-muted-foreground">
-              Para YouTube usa: https://www.youtube.com/embed/VIDEO_ID
+              Pega cualquier link de YouTube y se convertirá automáticamente al formato correcto
             </p>
           </div>
 
