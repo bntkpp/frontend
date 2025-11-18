@@ -31,6 +31,8 @@ export default function EditCoursePage() {
     duration_hours: "",
     level: "beginner",
     is_published: false,
+    has_questions_pack: false,
+    questions_pack_price: "",
   })
 
   useEffect(() => {
@@ -63,6 +65,8 @@ export default function EditCoursePage() {
           duration_hours: course.duration_hours?.toString() || "",
           level: course.level || "beginner",
           is_published: course.is_published,
+          has_questions_pack: course.has_questions_pack || false,
+          questions_pack_price: course.questions_pack_price?.toString() || "",
         })
       }
 
@@ -88,6 +92,8 @@ export default function EditCoursePage() {
         duration_hours: formData.duration_hours ? Number.parseInt(formData.duration_hours) : null,
         level: formData.level,
         is_published: formData.is_published,
+        has_questions_pack: formData.has_questions_pack,
+        questions_pack_price: formData.questions_pack_price ? Number.parseFloat(formData.questions_pack_price) : null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", params.id)
@@ -207,6 +213,36 @@ export default function EditCoursePage() {
                   onCheckedChange={(checked) => setFormData({ ...formData, is_published: checked })}
                 />
                 <Label htmlFor="is_published">Publicar curso</Label>
+              </div>
+
+              <div className="border-t pt-4 mt-4">
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="has_questions_pack"
+                      checked={formData.has_questions_pack}
+                      onCheckedChange={(checked) => setFormData({ ...formData, has_questions_pack: checked })}
+                    />
+                    <Label htmlFor="has_questions_pack">Ofrecer banco de preguntas adicional</Label>
+                  </div>
+
+                  {formData.has_questions_pack && (
+                    <div className="space-y-2 ml-8">
+                      <Label htmlFor="questions_pack_price">Precio del Banco de Preguntas (CLP)</Label>
+                      <Input
+                        id="questions_pack_price"
+                        type="number"
+                        step="1"
+                        placeholder="25000"
+                        value={formData.questions_pack_price}
+                        onChange={(e) => setFormData({ ...formData, questions_pack_price: e.target.value })}
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        Este precio se agregará al checkout como una opción adicional que el alumno puede seleccionar
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {message && (
