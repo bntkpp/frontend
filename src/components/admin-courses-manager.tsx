@@ -152,6 +152,7 @@ export function AdminCoursesManager({ initialCourses }: AdminCoursesManagerProps
 function CreateCourseDialog({ onCreated }: { onCreated: (course: any) => void }) {
   const [isOpen, setIsOpen] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
+  const [paymentType, setPaymentType] = useState<"one_time" | "subscription">("subscription")
   const { toast } = useToast()
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -160,18 +161,24 @@ function CreateCourseDialog({ onCreated }: { onCreated: (course: any) => void })
 
     const formData = new FormData(event.currentTarget)
 
+    const paymentType = formData.get("payment_type") as string
+
     const payload = {
       title: formData.get("title") as string,
       description: formData.get("description") as string,
       short_description: formData.get("short_description") as string,
       image_url: formData.get("image_url") as string,
       video_url: formData.get("video_url") as string,
-      price_1_month: parseFloat(formData.get("price_1_month") as string) || 35000,
-      price_4_months: parseFloat(formData.get("price_4_months") as string) || 140000,
-      price_8_months: parseFloat(formData.get("price_8_months") as string) || 280000,
+      payment_type: paymentType,
+      one_time_price: paymentType === "one_time" ? parseFloat(formData.get("one_time_price") as string) || null : null,
+      price_1_month: paymentType === "subscription" ? parseFloat(formData.get("price_1_month") as string) || null : null,
+      price_4_months: paymentType === "subscription" ? parseFloat(formData.get("price_4_months") as string) || null : null,
+      price_8_months: paymentType === "subscription" ? parseFloat(formData.get("price_8_months") as string) || null : null,
       duration_hours: parseInt(formData.get("duration_hours") as string) || null,
       level: formData.get("level") as string,
       published: formData.get("published") === "on",
+      has_questions_pack: formData.get("has_questions_pack") === "on",
+      questions_pack_price: formData.get("has_questions_pack") === "on" ? parseFloat(formData.get("questions_pack_price") as string) || null : null,
     }
 
     try {
@@ -235,37 +242,66 @@ function CreateCourseDialog({ onCreated }: { onCreated: (course: any) => void })
             </p>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="border-t pt-4 space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="price_1_month">Precio 1 Mes (CLP)</Label>
-              <Input
-                id="price_1_month"
-                name="price_1_month"
-                type="number"
-                defaultValue={35000}
-                step="1000"
-              />
+              <Label htmlFor="payment_type">Tipo de Pago</Label>
+              <Select name="payment_type" value={paymentType} onValueChange={(value: "one_time" | "subscription") => setPaymentType(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="one_time">Pago Único</SelectItem>
+                  <SelectItem value="subscription">Suscripción (múltiples planes)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="price_4_months">Precio 4 Meses (CLP)</Label>
-              <Input
-                id="price_4_months"
-                name="price_4_months"
-                type="number"
-                defaultValue={140000}
-                step="1000"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="price_8_months">Precio 8 Meses (CLP)</Label>
-              <Input
-                id="price_8_months"
-                name="price_8_months"
-                type="number"
-                defaultValue={280000}
-                step="1000"
-              />
-            </div>
+
+            {paymentType === "one_time" ? (
+              <div className="space-y-2">
+                <Label htmlFor="one_time_price">Precio Único (CLP)</Label>
+                <Input
+                  id="one_time_price"
+                  name="one_time_price"
+                  type="number"
+                  defaultValue={50000}
+                  step="1000"
+                  required
+                />
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="price_1_month">Precio 1 Mes (CLP)</Label>
+                  <Input
+                    id="price_1_month"
+                    name="price_1_month"
+                    type="number"
+                    defaultValue={35000}
+                    step="1000"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="price_4_months">Precio 4 Meses (CLP)</Label>
+                  <Input
+                    id="price_4_months"
+                    name="price_4_months"
+                    type="number"
+                    defaultValue={140000}
+                    step="1000"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="price_8_months">Precio 8 Meses (CLP)</Label>
+                  <Input
+                    id="price_8_months"
+                    name="price_8_months"
+                    type="number"
+                    defaultValue={280000}
+                    step="1000"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -294,6 +330,27 @@ function CreateCourseDialog({ onCreated }: { onCreated: (course: any) => void })
             <Label htmlFor="published">Publicado</Label>
           </div>
 
+          <div className="border-t pt-4 space-y-4">
+            <div className="flex items-center space-x-2">
+              <Switch id="has_questions_pack" name="has_questions_pack" />
+              <Label htmlFor="has_questions_pack">Ofrecer banco de preguntas adicional</Label>
+            </div>
+
+            <div className="space-y-2 ml-8">
+              <Label htmlFor="questions_pack_price">Precio del Banco de Preguntas (CLP)</Label>
+              <Input
+                id="questions_pack_price"
+                name="questions_pack_price"
+                type="number"
+                step="1000"
+                placeholder="25000"
+              />
+              <p className="text-xs text-muted-foreground">
+                Este precio se agregará al checkout como una opción adicional
+              </p>
+            </div>
+          </div>
+
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
               Cancelar
@@ -318,6 +375,7 @@ function EditCourseDialog({
 }) {
   const [isOpen, setIsOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [paymentType, setPaymentType] = useState<"one_time" | "subscription">(course.payment_type || "subscription")
   const { toast } = useToast()
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -326,18 +384,24 @@ function EditCourseDialog({
 
     const formData = new FormData(event.currentTarget)
 
+    const currentPaymentType = formData.get("payment_type") as string
+
     const payload = {
       title: formData.get("title") as string,
       description: formData.get("description") as string,
       short_description: formData.get("short_description") as string,
       image_url: formData.get("image_url") as string,
       video_url: formData.get("video_url") as string,
-      price_1_month: parseFloat(formData.get("price_1_month") as string),
-      price_4_months: parseFloat(formData.get("price_4_months") as string),
-      price_8_months: parseFloat(formData.get("price_8_months") as string),
+      payment_type: currentPaymentType,
+      one_time_price: currentPaymentType === "one_time" ? parseFloat(formData.get("one_time_price") as string) || null : null,
+      price_1_month: currentPaymentType === "subscription" ? parseFloat(formData.get("price_1_month") as string) || null : null,
+      price_4_months: currentPaymentType === "subscription" ? parseFloat(formData.get("price_4_months") as string) || null : null,
+      price_8_months: currentPaymentType === "subscription" ? parseFloat(formData.get("price_8_months") as string) || null : null,
       duration_hours: parseInt(formData.get("duration_hours") as string) || null,
       level: formData.get("level") as string,
       published: formData.get("published") === "on",
+      has_questions_pack: formData.get("has_questions_pack") === "on",
+      questions_pack_price: formData.get("has_questions_pack") === "on" ? parseFloat(formData.get("questions_pack_price") as string) || null : null,
     }
 
     try {
@@ -422,38 +486,69 @@ function EditCourseDialog({
             </p>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-price_1_month">Precio 1 Mes (CLP)</Label>
-              <Input
-                id="edit-price_1_month"
-                name="price_1_month"
-                type="number"
-                defaultValue={course.price_1_month || 35000}
-                step="1000"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-price_4_months">Precio 4 Meses (CLP)</Label>
-              <Input
-                id="edit-price_4_months"
-                name="price_4_months"
-                type="number"
-                defaultValue={course.price_4_months || 140000}
-                step="1000"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-price_8_months">Precio 8 Meses (CLP)</Label>
-              <Input
-                id="edit-price_8_months"
-                name="price_8_months"
-                type="number"
-                defaultValue={course.price_8_months || 280000}
-                step="1000"
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-payment_type">Tipo de Pago</Label>
+            <Select 
+              name="payment_type" 
+              value={paymentType}
+              onValueChange={(value) => setPaymentType(value as "one_time" | "subscription")}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="one_time">Pago Único</SelectItem>
+                <SelectItem value="subscription">Suscripción (múltiples planes)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+
+          {paymentType === "one_time" ? (
+            <div className="space-y-2">
+              <Label htmlFor="edit-one_time_price">Precio (CLP)</Label>
+              <Input
+                id="edit-one_time_price"
+                name="one_time_price"
+                type="number"
+                defaultValue={course.one_time_price || 35000}
+                step="1000"
+                required
+              />
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-price_1_month">Precio 1 Mes (CLP)</Label>
+                <Input
+                  id="edit-price_1_month"
+                  name="price_1_month"
+                  type="number"
+                  defaultValue={course.price_1_month || 35000}
+                  step="1000"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-price_4_months">Precio 4 Meses (CLP)</Label>
+                <Input
+                  id="edit-price_4_months"
+                  name="price_4_months"
+                  type="number"
+                  defaultValue={course.price_4_months || 140000}
+                  step="1000"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-price_8_months">Precio 8 Meses (CLP)</Label>
+                <Input
+                  id="edit-price_8_months"
+                  name="price_8_months"
+                  type="number"
+                  defaultValue={course.price_8_months || 280000}
+                  step="1000"
+                />
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -484,6 +579,28 @@ function EditCourseDialog({
           <div className="flex items-center space-x-2">
             <Switch id="edit-published" name="published" defaultChecked={course.published} />
             <Label htmlFor="edit-published">Publicado</Label>
+          </div>
+
+          <div className="border-t pt-4 space-y-4">
+            <div className="flex items-center space-x-2">
+              <Switch id="edit-has_questions_pack" name="has_questions_pack" defaultChecked={course.has_questions_pack || false} />
+              <Label htmlFor="edit-has_questions_pack">Ofrecer banco de preguntas adicional</Label>
+            </div>
+
+            <div className="space-y-2 ml-8">
+              <Label htmlFor="edit-questions_pack_price">Precio del Banco de Preguntas (CLP)</Label>
+              <Input
+                id="edit-questions_pack_price"
+                name="questions_pack_price"
+                type="number"
+                step="1000"
+                placeholder="25000"
+                defaultValue={course.questions_pack_price || ""}
+              />
+              <p className="text-xs text-muted-foreground">
+                Este precio se agregará al checkout como una opción adicional
+              </p>
+            </div>
           </div>
 
           <DialogFooter>
