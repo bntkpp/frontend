@@ -15,9 +15,11 @@ interface Course {
   description: string
   short_description: string | null
   image_url: string | null
-  price_1_month: number
-  price_4_months: number
-  price_8_months: number
+  payment_type: string | null
+  one_time_price: number | null
+  price_1_month: number | null
+  price_4_months: number | null
+  price_8_months: number | null
   duration_hours: number | null
   level: string | null
   published: boolean
@@ -161,6 +163,8 @@ export default function CoursesPage() {
                       title={course.title}
                       description={course.short_description || course.description}
                       image_url={course.image_url}
+                      payment_type={course.payment_type}
+                      one_time_price={course.one_time_price}
                       price_1_month={course.price_1_month}
                       price_4_months={course.price_4_months}
                       price_8_months={course.price_8_months}

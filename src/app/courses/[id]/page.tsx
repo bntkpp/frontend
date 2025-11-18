@@ -60,16 +60,20 @@ export default async function CoursePage({ params }: { params: Promise<{ id: str
     .eq("course_id", id)
     .order("order_index", { ascending: true })
 
-  // Calculate savings
+  // Detect payment type
+  const isOneTimePayment = course.payment_type === "one_time" || !!course.one_time_price
+
+  // Calculate savings (only for subscription courses)
   const calculateSavings = (monthlyPrice: number, totalPrice: number, months: number) => {
+    if (!monthlyPrice || !totalPrice) return { savings: 0, savingsPercent: 0, savingsAmount: 0 }
     const regularTotal = monthlyPrice * months
     const savings = regularTotal - totalPrice
     const savingsPercent = Math.round((savings / regularTotal) * 100)
     return { savings, savingsPercent, savingsAmount: savings }
   }
 
-  const savings4Months = calculateSavings(course.price_1_month, course.price_4_months, 4)
-  const savings8Months = calculateSavings(course.price_1_month, course.price_8_months, 8)
+  const savings4Months = isOneTimePayment ? { savings: 0, savingsPercent: 0, savingsAmount: 0 } : calculateSavings(course.price_1_month, course.price_4_months, 4)
+  const savings8Months = isOneTimePayment ? { savings: 0, savingsPercent: 0, savingsAmount: 0 } : calculateSavings(course.price_1_month, course.price_8_months, 8)
 
   return (
     <main className="min-h-screen flex flex-col">
@@ -129,7 +133,7 @@ export default async function CoursePage({ params }: { params: Promise<{ id: str
               <div className="lg:col-span-1">
                 <Card className="sticky top-20">
                   <CardHeader>
-                    <CardTitle className="text-center">Elige tu Plan</CardTitle>
+                    <CardTitle className="text-center">{isOneTimePayment ? "Precio del Curso" : "Elige tu Plan"}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     {course.image_url && (
@@ -140,7 +144,28 @@ export default async function CoursePage({ params }: { params: Promise<{ id: str
                       />
                     )}
 
-                    <Tabs defaultValue="4_months" className="w-full mb-6">
+                    {isOneTimePayment ? (
+                      <div className="space-y-4">
+                        <div className="text-center">
+                          <p className="text-4xl font-bold text-primary mb-2">
+                            ${course.one_time_price?.toLocaleString("es-CL")}
+                          </p>
+                          <p className="text-sm text-muted-foreground">Pago único - Acceso de por vida</p>
+                        </div>
+                        {isEnrolled ? (
+                          <Button size="lg" className="w-full" asChild>
+                            <Link href={`/learn/${id}`}>Ir al Curso</Link>
+                          </Button>
+                        ) : (
+                          <Button size="lg" className="w-full" asChild>
+                            <Link href={user ? `/checkout/${id}` : "/auth/sign-up"}>
+                              {user ? "Comprar Curso" : "Registrarse"}
+                            </Link>
+                          </Button>
+                        )}
+                      </div>
+                    ) : (
+                      <Tabs defaultValue="4_months" className="w-full mb-6">
                       <TabsList className="grid w-full grid-cols-3">
                         <TabsTrigger value="1_month" className="text-xs">1 Mes</TabsTrigger>
                         <TabsTrigger value="4_months" className="text-xs">
@@ -247,6 +272,7 @@ export default async function CoursePage({ params }: { params: Promise<{ id: str
                         </p>
                       </TabsContent>
                     </Tabs>
+                    )}
 
                     <div className="space-y-2 text-sm border-t pt-4">
                       <p className="font-semibold mb-3">Este plan incluye:</p>
