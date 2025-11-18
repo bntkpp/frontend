@@ -57,13 +57,15 @@ export async function POST(req: Request) {
     const userId = metadata?.user_id;
     const planType = metadata?.plan_type;
     const months = metadata?.months ? parseInt(metadata.months) : 1;
+    const includeQuestions = metadata?.include_questions === "true";
+    const questionsPrice = metadata?.questions_price ? parseFloat(metadata.questions_price) : 0;
 
     if (!courseId || !userId) {
       console.log("❌ Faltan metadatos:", { courseId, userId, metadata });
       return NextResponse.json({ error: "Missing metadata" }, { status: 400 });
     }
 
-    console.log("📊 Metadatos:", { courseId, userId, planType, months });
+    console.log("📊 Metadatos:", { courseId, userId, planType, months, includeQuestions, questionsPrice });
 
     // Verificar si el pago ya fue procesado
     const { data: existing } = await supabaseAdmin
@@ -87,6 +89,8 @@ export async function POST(req: Request) {
       mercadopago_payment_id: String(paymentId),
       payment_method: paymentInfo.payment_method_id || null,
       payment_type: paymentInfo.payment_type_id || null,
+      includes_questions_pack: includeQuestions,
+      questions_pack_price: includeQuestions ? questionsPrice : null,
     });
 
     if (insertError) {

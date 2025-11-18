@@ -10,9 +10,9 @@ const planLabels: Record<string, string> = {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { courseId, userId, plan, price, months } = body
+    const { courseId, userId, plan, price, months, includeQuestions, questionsPrice, totalPrice } = body
 
-    console.log("Creating preference:", { courseId, userId, plan, price, months })
+    console.log("Creating preference:", { courseId, userId, plan, price, months, includeQuestions, questionsPrice })
 
     if (!courseId || !userId || !plan || !price) {
       return NextResponse.json(
@@ -55,16 +55,32 @@ export async function POST(request: NextRequest) {
 
     const preference = new Preference(client)
 
+    // Build items array with course and optional questions addon
+    const items = [
+      {
+        id: courseId,
+        title: `${courseTitle} - ${planLabels[plan]}`,
+        description: `Acceso al curso por ${months} ${months === 1 ? "mes" : "meses"}`,
+        quantity: 1,
+        unit_price: Number(price),
+        currency_id: "CLP",
+      },
+    ]
+
+    // Add questions addon if selected
+    if (includeQuestions && questionsPrice > 0) {
+      items.push({
+        id: `${courseId}-questions`,
+        title: `Banco de Preguntas - ${courseTitle}`,
+        description: "Preguntas tipo prueba para practicar",
+        quantity: 1,
+        unit_price: Number(questionsPrice),
+        currency_id: "CLP",
+      })
+    }
+
     const preferenceData = {
-      items: [
-        {
-          title: `${courseTitle} - ${planLabels[plan]}`,
-          description: `Acceso al curso por ${months} ${months === 1 ? "mes" : "meses"}`,
-          quantity: 1,
-          unit_price: Number(price),
-          currency_id: "CLP",
-        },
-      ],
+      items: items,
       back_urls: {
         success: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/success?courseId=${courseId}&plan=${plan}`,
         failure: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/failure`,
@@ -77,6 +93,8 @@ export async function POST(request: NextRequest) {
         user_id: userId,
         plan_type: plan, // IMPORTANTE: Asegúrate que esto se envíe
         months: months.toString(),
+        include_questions: includeQuestions ? "true" : "false",
+        questions_price: includeQuestions ? questionsPrice.toString() : "0",
       },
     }
 
