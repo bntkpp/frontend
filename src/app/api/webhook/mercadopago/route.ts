@@ -7,6 +7,8 @@ export const maxDuration = 30; // segundos
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { MercadoPagoConfig, Payment } from "mercadopago";
+import { sendEmail } from "@/lib/emails/send";
+import { getPurchaseConfirmationTemplate, getWelcomeEmailTemplate } from "@/lib/emails/templates";
 
 // Usar la misma variable de entorno que en create-preference
 const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN || process.env.MERCADOPAGO_ACCESS_TOKEN;
@@ -104,6 +106,19 @@ export async function POST(req: Request) {
     if (paymentInfo.status === "approved") {
       console.log("💰 Pago aprobado, creando inscripción...");
 
+      // Obtener información del usuario y curso para el email
+      const { data: userData } = await supabaseAdmin
+        .from("profiles")
+        .select("full_name, email")
+        .eq("id", userId)
+        .single();
+
+      const { data: courseData } = await supabaseAdmin
+        .from("courses")
+        .select("title")
+        .eq("id", courseId)
+        .single();
+
       // Verificar si ya existe una inscripción
       const { data: existingEnrollment } = await supabaseAdmin
         .from("enrollments")
@@ -111,6 +126,8 @@ export async function POST(req: Request) {
         .eq("user_id", userId)
         .eq("course_id", courseId)
         .maybeSingle();
+
+      const isNewEnrollment = !existingEnrollment;
 
       if (existingEnrollment) {
         console.log("📝 Inscripción existente encontrada, extendiendo...");
@@ -162,6 +179,61 @@ export async function POST(req: Request) {
           console.error("❌ Error creando inscripción:", enrollError);
         } else {
           console.log("✅ Inscripción creada exitosamente, expira:", expiresAt.toISOString());
+        }
+      }
+
+      // Enviar emails de confirmación
+      if (userData && courseData) {
+        const userEmail = userData.email || "";
+        const userName = userData.full_name || "";
+        const courseTitle = courseData.title || "";
+
+        try {
+          // Email de confirmación de compra
+          const planLabel = planType === "one_time" 
+            ? "Pago único" 
+            : `Plan ${months} ${months === 1 ? 'mes' : 'meses'}`;
+
+          const purchaseHtml = getPurchaseConfirmationTemplate({
+            userName,
+            userEmail,
+            courseTitle,
+            courseId,
+            amount: paymentInfo.transaction_amount || 0,
+            plan: planLabel,
+            includesQuestions: includeQuestions,
+            paymentId: String(paymentId),
+            purchaseDate: new Date().toISOString(),
+          });
+
+          await sendEmail({
+            to: userEmail,
+            subject: `✅ Confirmación de compra - ${courseTitle}`,
+            html: purchaseHtml,
+          });
+
+          console.log("✅ Email de confirmación enviado");
+
+          // Email de bienvenida solo si es nueva inscripción
+          if (isNewEnrollment) {
+            const welcomeHtml = getWelcomeEmailTemplate({
+              userName,
+              userEmail,
+              courseTitle,
+              courseId,
+            });
+
+            await sendEmail({
+              to: userEmail,
+              subject: `🎉 Bienvenido a ${courseTitle}`,
+              html: welcomeHtml,
+            });
+
+            console.log("✅ Email de bienvenida enviado");
+          }
+        } catch (emailError) {
+          console.error("❌ Error enviando emails:", emailError);
+          // No fallar el webhook por error de email
         }
       }
     } else {
