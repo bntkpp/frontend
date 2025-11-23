@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Navbar } from "@/components/navbar"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useState } from "react"
 
 export default function Page() {
@@ -17,6 +17,8 @@ export default function Page() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirect = searchParams.get("redirect")
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -34,8 +36,9 @@ export default function Page() {
       if (error) throw error
 
       if (data?.session) {
-        // Forzar una recarga completa de la página
-        window.location.href = "/"
+        // Redirigir a la URL original o al dashboard
+        const redirectUrl = redirect || "/dashboard"
+        window.location.href = redirectUrl
       }
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "Ocurrió un error")
@@ -80,6 +83,11 @@ export default function Page() {
                         onChange={(e) => setPassword(e.target.value)}
                         disabled={isLoading}
                       />
+                      <div className="text-right">
+                        <Link href="/auth/reset-password" className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-4">
+                          ¿Olvidaste tu contraseña?
+                        </Link>
+                      </div>
                     </div>
                     {error && <p className="text-sm text-red-500">{error}</p>}
                     <Button type="submit" className="w-full" disabled={isLoading}>
