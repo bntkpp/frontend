@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { 
-  Download, 
+import {
+  Download,
   Maximize2,
   ChevronLeft,
   ChevronRight,
@@ -36,11 +36,11 @@ export function PDFViewerSimple({ url }: PDFViewerSimpleProps) {
       const script = document.createElement('script')
       script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'
       script.async = true
-      
+
       script.onload = () => {
         const pdfjsLib = (window as any).pdfjsLib
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
-        
+
         // Cargar el documento PDF
         pdfjsLib.getDocument(url).promise.then((pdf: any) => {
           setPdfDoc(pdf)
@@ -51,7 +51,7 @@ export function PDFViewerSimple({ url }: PDFViewerSimpleProps) {
           setIsLoading(false)
         })
       }
-      
+
       document.body.appendChild(script)
     }
 
@@ -70,7 +70,7 @@ export function PDFViewerSimple({ url }: PDFViewerSimpleProps) {
         try {
           const page = await pdfDoc.getPage(pageNumber)
           const viewport = page.getViewport({ scale })
-          
+
           const context = canvas.getContext('2d')
           if (!context) continue
 
@@ -136,7 +136,7 @@ export function PDFViewerSimple({ url }: PDFViewerSimpleProps) {
       const rect = container.getBoundingClientRect()
       const mouseY = e.clientY
       const containerBottom = rect.bottom
-      
+
       // Mostrar controles solo si el mouse está en los últimos 150px de la parte inferior
       const distanceFromBottom = containerBottom - mouseY
       setShowControls(distanceFromBottom <= 150 && distanceFromBottom >= 0)
@@ -157,11 +157,11 @@ export function PDFViewerSimple({ url }: PDFViewerSimpleProps) {
 
     container.addEventListener('mousemove', handleMouseMove)
     container.addEventListener('mouseleave', handleMouseLeave)
-    
+
     if (controls) {
       controls.addEventListener('mouseleave', handleControlsMouseLeave)
     }
-    
+
     return () => {
       container.removeEventListener('mousemove', handleMouseMove)
       container.removeEventListener('mouseleave', handleMouseLeave)
@@ -211,11 +211,11 @@ export function PDFViewerSimple({ url }: PDFViewerSimpleProps) {
   }
 
   return (
-    <div 
+    <div
       className="relative h-full w-full bg-zinc-100 dark:bg-zinc-900 flex flex-col overflow-auto"
     >
       {/* Área de scroll vertical con todas las páginas */}
-      <div 
+      <div
         ref={containerRef}
         className="flex-1 flex flex-col items-center gap-4 p-4 overflow-auto"
       >
@@ -235,7 +235,7 @@ export function PDFViewerSimple({ url }: PDFViewerSimpleProps) {
                   pageRefs.current.delete(pageNumber)
                 }
               }}
-              className="shadow-2xl max-w-full h-auto"
+              className="shadow-2xl max-w-full h-auto block"
             />
           ))
         )}
@@ -243,11 +243,10 @@ export function PDFViewerSimple({ url }: PDFViewerSimpleProps) {
 
       {/* Controles flotantes - aparecen solo cuando el mouse está cerca del fondo */}
       {!isLoading && numPages > 0 && (
-        <div 
+        <div
           ref={controlsRef}
-          className={`absolute bottom-6 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ease-in-out ${
-            showControls ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
-          }`}
+          className={`absolute bottom-6 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ease-in-out ${showControls ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
+            }`}
           onMouseEnter={() => setShowControls(true)}
         >
           <div className="bg-primary/95 backdrop-blur-md rounded-full px-4 py-2.5 flex items-center gap-2 shadow-2xl border border-primary-foreground/10">
@@ -261,11 +260,11 @@ export function PDFViewerSimple({ url }: PDFViewerSimpleProps) {
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            
+
             <span className="text-primary-foreground text-sm font-medium px-2">
               {currentPage} / {numPages}
             </span>
-            
+
             <Button
               variant="ghost"
               size="sm"
@@ -288,11 +287,11 @@ export function PDFViewerSimple({ url }: PDFViewerSimpleProps) {
             >
               <ZoomOut className="h-4 w-4" />
             </Button>
-            
+
             <span className="text-primary-foreground text-xs font-medium px-1">
               {Math.round(scale * 100)}%
             </span>
-            
+
             <Button
               variant="ghost"
               size="sm"
