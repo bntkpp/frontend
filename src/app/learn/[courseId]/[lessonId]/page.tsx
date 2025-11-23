@@ -2,6 +2,7 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { CourseSidebar } from "@/components/course-sidebar"
 import { LessonPageClient } from "@/components/lesson-page-client"
+import { ChatbotWidget } from "@/components/chatbot-widget"
 
 export default async function LessonPage({
   params,
@@ -115,6 +116,7 @@ export default async function LessonPage({
           nextLesson={nextLesson}
         />
       </main>
+      <ChatbotWidget courseId={courseId} courseName={course?.title || ""} />
     </div>
   )
 }
