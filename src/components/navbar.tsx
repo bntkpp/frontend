@@ -22,12 +22,11 @@ export function Navbar() {
   }, [])
 
   return (
-    <motion.nav 
-      className={`sticky top-0 z-50 w-full border-b border-border backdrop-blur-md transition-all duration-300 ${
-        scrolled 
-          ? "bg-background/80 shadow-lg" 
+    <motion.nav
+      className={`sticky top-0 z-50 w-full border-b border-border backdrop-blur-md transition-all duration-300 ${scrolled
+          ? "bg-background/80 shadow-lg"
           : "bg-background/60"
-      }`}
+        }`}
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
@@ -47,29 +46,29 @@ export function Navbar() {
           </Link>
 
           <div className="hidden md:flex items-center gap-6">
-            <Link 
-              href="/#courses" 
+            <Link
+              href="/#courses"
               className="text-sm font-medium hover:text-primary transition-colors relative group"
             >
               Cursos
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full"></span>
             </Link>
-            <Link 
-              href="/#about" 
+            <Link
+              href="/#about"
               className="text-sm font-medium hover:text-primary transition-colors relative group"
             >
               Nosotros
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full"></span>
             </Link>
-            <Link 
-              href="/#faq" 
+            <Link
+              href="/#faq"
               className="text-sm font-medium hover:text-primary transition-colors relative group"
             >
               FAQ
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full"></span>
             </Link>
-            <Link 
-              href="/#contacto" 
+            <Link
+              href="/#contacto"
               className="text-sm font-medium hover:text-primary transition-colors relative group"
             >
               Contacto
@@ -77,7 +76,7 @@ export function Navbar() {
             </Link>
           </div>
 
-          <motion.div 
+          <motion.div
             className="hidden md:flex items-center gap-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -106,7 +105,7 @@ export function Navbar() {
             )}
           </motion.div>
 
-          <motion.button 
+          <motion.button
             className="md:hidden"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             whileTap={{ scale: 0.95 }}
@@ -139,7 +138,7 @@ export function Navbar() {
 
         <AnimatePresence>
           {isMenuOpen && (
-            <motion.div 
+            <motion.div
               className="md:hidden py-4 space-y-4"
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
@@ -174,8 +173,8 @@ export function Navbar() {
               >
                 Contacto
               </Link>
-              
-              <motion.div 
+
+              <motion.div
                 className="pt-4 space-y-2 border-t"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
