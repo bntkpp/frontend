@@ -87,8 +87,7 @@ export function CoursePreview() {
     <section id="courses" className="py-20 relative overflow-hidden bg-gradient-to-b from-background to-muted/20">
       {/* Decoración de fondo */}
       <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:50px_50px]" />
-      <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-      
+
       <div className="container mx-auto px-4 relative">
         <motion.div
           className="text-center mb-12"
@@ -101,12 +100,12 @@ export function CoursePreview() {
             <Sparkles className="h-4 w-4" />
             <span className="text-sm font-medium">Nuestros Cursos</span>
           </div>
-          
+
           <h2 className="text-3xl md:text-4xl font-bold mb-4 text-balance">Cursos Destacados</h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto text-balance leading-relaxed">
             Explora nuestra selección de cursos diseñados para tu éxito
           </p>
-        </motion.div>
+        </motion.div >
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {courses.map((course, index) => {
@@ -120,10 +119,10 @@ export function CoursePreview() {
                 key={course.id}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ duration: 0.3, ease: "easeOut", delay: index * 0.1 }}
               >
-                <Card className="overflow-hidden flex flex-col h-full border-2 hover:border-primary/20 transition-all duration-200 group">
+                <Card className="overflow-hidden flex flex-col h-full border-2 hover:border-primary/20 transition-colors duration-200 group">
                   <div className="relative h-48 w-full overflow-hidden bg-muted">
                     {course.image_url ? (
                       <Image
@@ -144,11 +143,11 @@ export function CoursePreview() {
                         Ahorra hasta {bestSavings}%
                       </Badge>
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   </div>
 
                   <CardContent className="pt-6 flex-1">
-                    <h3 className="text-xl font-semibold mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+                    <h3 className="text-xl font-semibold mb-2 line-clamp-2 group-hover:text-primary transition-colors duration-200">
                       {course.title}
                     </h3>
                     <p className="text-muted-foreground text-sm mb-4 leading-relaxed line-clamp-3">
@@ -201,8 +200,8 @@ export function CoursePreview() {
                         </div>
                       )}
                     </div>
-                    
-                    <Button asChild className="w-full transition-all duration-200">
+
+                    <Button asChild className="w-full transition-transform duration-200 active:scale-95">
                       <Link href={`/courses/${course.id}`} className="flex items-center justify-center gap-2">
                         Ver Detalles
                         <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
@@ -229,7 +228,7 @@ export function CoursePreview() {
             </Link>
           </Button>
         </motion.div>
-      </div>
-    </section>
+      </div >
+    </section >
   )
 }
