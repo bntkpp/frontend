@@ -9,9 +9,9 @@ import { Label } from "@/components/ui/label"
 import { Navbar } from "@/components/navbar"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useState } from "react"
+import { useState, Suspense } from "react"
 
-export default function Page() {
+function LoginForm() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
@@ -48,61 +48,76 @@ export default function Page() {
   }
 
   return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-2xl">Iniciar Sesión</CardTitle>
+        <CardDescription>Ingresa tu correo para iniciar sesión</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleLogin}>
+          <div className="flex flex-col gap-6">
+            <div className="grid gap-2">
+              <Label htmlFor="email">Correo</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="correo@ejemplo.com"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={isLoading}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="password">Contraseña</Label>
+              <Input
+                id="password"
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={isLoading}
+              />
+              <div className="text-right">
+                <Link href="/auth/reset-password" className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-4">
+                  ¿Olvidaste tu contraseña?
+                </Link>
+              </div>
+            </div>
+            {error && <p className="text-sm text-red-500">{error}</p>}
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? "Iniciando sesión..." : "Iniciar Sesión"}
+            </Button>
+          </div>
+          <div className="mt-4 text-center text-sm">
+            ¿No tienes una cuenta?{" "}
+            <Link href="/auth/sign-up" className="underline underline-offset-4">
+              Registrarse
+            </Link>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  )
+}
+
+export default function Page() {
+  return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
       <div className="flex-1 flex items-center justify-center p-6 md:p-10">
         <div className="w-full max-w-sm">
           <div className="flex flex-col gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-2xl">Iniciar Sesión</CardTitle>
-                <CardDescription>Ingresa tu correo para iniciar sesión</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleLogin}>
-                  <div className="flex flex-col gap-6">
-                    <div className="grid gap-2">
-                      <Label htmlFor="email">Correo</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="correo@ejemplo.com"
-                        required
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        disabled={isLoading}
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="password">Contraseña</Label>
-                      <Input
-                        id="password"
-                        type="password"
-                        required
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        disabled={isLoading}
-                      />
-                      <div className="text-right">
-                        <Link href="/auth/reset-password" className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-4">
-                          ¿Olvidaste tu contraseña?
-                        </Link>
-                      </div>
-                    </div>
-                    {error && <p className="text-sm text-red-500">{error}</p>}
-                    <Button type="submit" className="w-full" disabled={isLoading}>
-                      {isLoading ? "Iniciando sesión..." : "Iniciar Sesión"}
-                    </Button>
-                  </div>
-                  <div className="mt-4 text-center text-sm">
-                    ¿No tienes una cuenta?{" "}
-                    <Link href="/auth/sign-up" className="underline underline-offset-4">
-                      Registrarse
-                    </Link>
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
+            <Suspense fallback={
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-2xl">Iniciar Sesión</CardTitle>
+                  <CardDescription>Cargando...</CardDescription>
+                </CardHeader>
+              </Card>
+            }>
+              <LoginForm />
+            </Suspense>
           </div>
         </div>
       </div>
