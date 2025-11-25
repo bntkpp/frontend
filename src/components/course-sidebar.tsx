@@ -3,7 +3,9 @@
 import { useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { CheckCircle2, Circle, PlayCircle, FileText, PenTool, File, ChevronDown, ChevronUp } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { CheckCircle2, Circle, PlayCircle, FileText, PenTool, File, ChevronDown, ChevronUp, Menu, BookOpen } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
@@ -35,10 +37,19 @@ const lessonIcons = {
   quiz: PenTool,
 }
 
-export function CourseSidebar({ courseId, modules, progress }: CourseSidebarProps) {
+function SidebarContent({ 
+  courseId, 
+  modules, 
+  progress,
+  onLessonClick 
+}: { 
+  courseId: string
+  modules: Module[]
+  progress: number
+  onLessonClick?: () => void
+}) {
   const pathname = usePathname()
   const [openModules, setOpenModules] = useState<Set<string>>(() => {
-    // Por defecto, abrir el módulo que contiene la lección actual
     const currentModuleId = modules.find(module => 
       module.lessons.some(lesson => pathname.includes(lesson.id))
     )?.id
@@ -64,7 +75,7 @@ export function CourseSidebar({ courseId, modules, progress }: CourseSidebarProp
   }
 
   return (
-    <div className="w-full md:w-80 bg-muted/30 border-r border-border flex flex-col h-screen">
+    <>
       {/* Header fijo */}
       <div className="p-4 border-b border-border flex-shrink-0 bg-background">
         <div className="space-y-2">
@@ -79,7 +90,7 @@ export function CourseSidebar({ courseId, modules, progress }: CourseSidebarProp
       {/* Contenido scrolleable */}
       <div className="flex-1 overflow-y-auto p-4">
         <div className="space-y-2">
-          {modules.map((module, moduleIndex) => {
+          {modules.map((module) => {
             const isOpen = openModules.has(module.id)
             const moduleProgress = getModuleProgress(module)
             
@@ -116,6 +127,7 @@ export function CourseSidebar({ courseId, modules, progress }: CourseSidebarProp
                         <Link
                           key={lesson.id}
                           href={`/learn/${courseId}/${lesson.id}`}
+                          onClick={onLessonClick}
                           className={`flex items-center gap-2 px-3 py-2.5 rounded-md transition-all text-sm border ${
                             isActive
                               ? "bg-primary text-primary-foreground border-primary shadow-sm"
@@ -144,6 +156,47 @@ export function CourseSidebar({ courseId, modules, progress }: CourseSidebarProp
           })}
         </div>
       </div>
-    </div>
+    </>
+  )
+}
+
+export function CourseSidebar({ courseId, modules, progress }: CourseSidebarProps) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <>
+      {/* Desktop Sidebar - Oculto en móvil */}
+      <div className="hidden md:flex w-80 bg-muted/30 border-r border-border flex-col h-screen">
+        <SidebarContent courseId={courseId} modules={modules} progress={progress} />
+      </div>
+
+      {/* Mobile Header - Visible solo en móvil */}
+      <div className="md:hidden sticky top-0 z-50 bg-background border-b border-border px-4 py-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <BookOpen className="h-5 w-5 text-primary" />
+            <span className="font-semibold text-sm">Contenido del Curso</span>
+          </div>
+          <Sheet open={open} onOpenChange={setOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Menu className="h-4 w-4 mr-2" />
+                Módulos
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-80 p-0">
+              <div className="flex flex-col h-full">
+                <SidebarContent 
+                  courseId={courseId} 
+                  modules={modules} 
+                  progress={progress}
+                  onLessonClick={() => setOpen(false)}
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+      </div>
+    </>
   )
 }

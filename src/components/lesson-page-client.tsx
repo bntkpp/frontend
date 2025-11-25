@@ -88,20 +88,24 @@ export function LessonPageClient({
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
-      {/* Header fijo */}
+      {/* Header fijo con navegación */}
       <div className="border-b border-border bg-background flex-shrink-0">
-        <div className="px-4 sm:px-6 py-3 flex items-center justify-between">
-          <Button variant="ghost" asChild size="sm">
-            <Link href="/dashboard">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Volver al Dashboard
-            </Link>
-          </Button>
+        <div className="px-3 sm:px-6 py-3">
+          <div className="flex items-center justify-between">
+            <Button variant="ghost" asChild size="sm" className="h-8 px-2 sm:px-3">
+              <Link href="/dashboard">
+                <ArrowLeft className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Volver al Dashboard</span>
+              </Link>
+            </Button>
 
-          <div className="text-sm text-muted-foreground">
-            <Link href={`/courses/${courseId}`} className="hover:text-foreground">
-              {courseTitle}
-            </Link>
+            <div className="text-sm text-muted-foreground text-center flex-1 mx-4">
+              <Link href={`/courses/${courseId}`} className="hover:text-foreground">
+                {courseTitle}
+              </Link>
+            </div>
+
+            <div className="w-[100px]"></div>
           </div>
         </div>
       </div>

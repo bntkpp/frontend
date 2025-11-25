@@ -51,8 +51,21 @@ export default async function LessonPage({
   // Get user progress for all lessons
   const { data: progressData } = await supabase.from("progress").select("*").eq("user_id", user.id)
 
-  // Calculate progress
-  const allLessons = modules?.flatMap((module) => module.lessons) || []
+  // Calculate progress - ordenar todas las lecciones por módulo y luego por order_index
+  const allLessons = modules
+    ?.flatMap((module) => 
+      module.lessons
+        .sort((a: any, b: any) => (a.order_index || 0) - (b.order_index || 0))
+        .map((lesson: any) => ({ ...lesson, module_order: module.order_index }))
+    )
+    .sort((a: any, b: any) => {
+      // Primero ordenar por módulo, luego por lección
+      if (a.module_order !== b.module_order) {
+        return (a.module_order || 0) - (b.module_order || 0)
+      }
+      return (a.order_index || 0) - (b.order_index || 0)
+    }) || []
+    
   const completedLessonIds = progressData?.filter((record) => record.completed).map((record) => record.lesson_id) || []
   const progressPercentage = allLessons.length > 0 ? Math.round((completedLessonIds.length / allLessons.length) * 100) : 0
 
@@ -97,7 +110,7 @@ export default async function LessonPage({
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex flex-col md:flex-row h-screen overflow-hidden">
       <CourseSidebar 
         courseId={courseId} 
         modules={modulesWithLessons || []} 

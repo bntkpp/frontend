@@ -22,6 +22,7 @@ interface LessonContentProps {
     id: string
     title: string
     content: string | null
+    content_title?: string | null
     video_url: string | null
     lesson_type: string
     capsules?: LessonCapsule[] | string | null
@@ -98,7 +99,7 @@ function parseCapsules(lesson: LessonContentProps["lesson"]): LessonCapsule[] {
       id: `${lesson.id}-text`,
       type: "text",
       content: lesson.content,
-      title: "Transcripción",
+      title: lesson.content_title || null,
     })
   }
 
@@ -166,8 +167,13 @@ export function LessonContent({
       case "text":
       default:
         return (
-          <div className="prose prose-sm max-w-none dark:prose-invert">
-            <p className="leading-relaxed whitespace-pre-wrap">{capsule.content}</p>
+          <div className="prose prose-base max-w-none dark:prose-invert prose-headings:font-bold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-p:text-base prose-p:leading-relaxed prose-ul:list-disc prose-ol:list-decimal prose-li:ml-4 prose-a:text-primary prose-a:underline prose-strong:font-bold">
+            <div 
+              className="whitespace-pre-wrap"
+              dangerouslySetInnerHTML={{ 
+                __html: capsule.content?.replace(/\n/g, '<br />') || '' 
+              }}
+            />
           </div>
         )
     }
@@ -175,9 +181,9 @@ export function LessonContent({
 
   return (
     <div className="flex flex-col h-full overflow-hidden bg-background">
-      {/* Contenido principal - PDF o Video ocupando todo el espacio */}
+      {/* Contenido principal - PDF ocupando todo el espacio */}
       {hasCapsules && capsules.some(c => c.type === "pdf") && (
-        <div className="flex-1 w-full overflow-hidden">
+        <div className="flex-1 w-full overflow-hidden min-h-0">
           {capsules
             .filter(c => c.type === "pdf")
             .map((capsule) => (
@@ -188,38 +194,76 @@ export function LessonContent({
         </div>
       )}
 
-      {/* Si tiene video */}
+      {/* Si tiene video - centrado con fondo negro */}
       {hasCapsules && !capsules.some(c => c.type === "pdf") && capsules.some(c => c.type === "video") && (
-        <div className="flex-1 w-full bg-black flex items-center justify-center overflow-hidden">
-          {capsules
-            .filter(c => c.type === "video")
-            .map((capsule) => (
-              <div key={capsule.id || `${lesson.id}-video`} className="w-full max-w-6xl px-4">
-                {renderCapsule(capsule)}
-              </div>
-            ))}
+        <div className="flex-1 w-full overflow-y-auto min-h-0">
+          <div className="min-h-full bg-black flex items-center justify-center p-4 md:p-8">
+            {capsules
+              .filter(c => c.type === "video")
+              .map((capsule) => (
+                <div key={capsule.id || `${lesson.id}-video`} className="w-full max-w-5xl">
+                  {renderCapsule(capsule)}
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+
+      {/* Si tiene texto - área scrolleable con padding */}
+      {hasCapsules && !capsules.some(c => c.type === "pdf") && !capsules.some(c => c.type === "video") && capsules.some(c => c.type === "text") && (
+        <div className="flex-1 w-full overflow-y-auto min-h-0">
+          <div className="max-w-4xl mx-auto px-4 md:px-8 py-6 md:py-8">
+            {capsules
+              .filter(c => c.type === "text")
+              .map((capsule) => (
+                <div key={capsule.id || `${lesson.id}-text`}>
+                  {capsule.title && (
+                    <h2 className="text-2xl md:text-3xl font-bold mb-6">{capsule.title}</h2>
+                  )}
+                  {renderCapsule(capsule)}
+                </div>
+              ))}
+          </div>
         </div>
       )}
 
       {/* Fallback para video_url directo */}
       {!hasCapsules && lesson.video_url && lesson.video_url.toLowerCase().endsWith('.pdf') && (
-        <div className="flex-1 w-full overflow-hidden">
+        <div className="flex-1 w-full overflow-hidden min-h-0">
           <PDFViewerSimple url={lesson.video_url} />
         </div>
       )}
 
       {!hasCapsules && lesson.video_url && (lesson.video_url.includes('youtube') || lesson.video_url.includes('vimeo')) && (
-        <div className="flex-1 w-full bg-black flex items-center justify-center overflow-hidden">
-          <div className="w-full max-w-6xl px-4">
-            <div className="w-full bg-black rounded-lg overflow-hidden">
-              <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-                <iframe
-                  src={lesson.video_url}
-                  className="absolute top-0 left-0 w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
+        <div className="flex-1 w-full overflow-y-auto min-h-0">
+          <div className="min-h-full bg-black flex items-center justify-center p-4 md:p-8">
+            <div className="w-full max-w-5xl">
+              <div className="w-full bg-black rounded-lg overflow-hidden">
+                <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                  <iframe
+                    src={lesson.video_url}
+                    className="absolute top-0 left-0 w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Si tiene contenido de texto en lesson.content */}
+      {!hasCapsules && lesson.content && (
+        <div className="flex-1 w-full overflow-y-auto min-h-0">
+          <div className="max-w-4xl mx-auto px-4 md:px-8 py-6 md:py-8">
+            <div className="prose prose-base max-w-none dark:prose-invert prose-headings:font-bold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-p:text-base prose-p:leading-relaxed prose-ul:list-disc prose-ol:list-decimal prose-li:ml-4 prose-a:text-primary prose-a:underline prose-strong:font-bold">
+              <div 
+                className="whitespace-pre-wrap"
+                dangerouslySetInnerHTML={{ 
+                  __html: lesson.content.replace(/\n/g, '<br />') 
+                }}
+              />
             </div>
           </div>
         </div>
