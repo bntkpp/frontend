@@ -125,7 +125,7 @@ export function AdminCourseStructure({ courses }: AdminCourseStructureProps) {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <CardTitle>Estructura de Cursos</CardTitle>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={expandAll}>
@@ -137,7 +137,7 @@ export function AdminCourseStructure({ courses }: AdminCourseStructureProps) {
           </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-3 sm:p-6">
         <div className="space-y-3">
           {courses.map((course) => (
             <div key={course.id} className="border rounded-lg">
@@ -145,24 +145,26 @@ export function AdminCourseStructure({ courses }: AdminCourseStructureProps) {
               <div className="bg-muted/30">
                 <button
                   onClick={() => toggleCourse(course.id)}
-                  className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
+                  className="w-full flex items-center justify-between p-3 sm:p-4 hover:bg-muted/50 transition-colors"
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                     {openCourses.has(course.id) ? (
-                      <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                      <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground flex-shrink-0" />
                     ) : (
-                      <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                      <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground flex-shrink-0" />
                     )}
-                    <BookOpen className="h-5 w-5 text-primary" />
-                    <div className="text-left">
-                      <p className="font-semibold">{course.title}</p>
+                    <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                    <div className="text-left min-w-0 flex-1">
+                      <p className="font-semibold text-sm sm:text-base truncate">{course.title}</p>
                       <p className="text-xs text-muted-foreground">
                         {course.modules.length} módulo{course.modules.length !== 1 ? 's' : ''} • {' '}
                         {course.modules.reduce((sum, m) => sum + m.lessons.length, 0)} lección{course.modules.reduce((sum, m) => sum + m.lessons.length, 0) !== 1 ? 'es' : ''}
                       </p>
                     </div>
                   </div>
-                  <CreateModuleDialog courseId={course.id} courseTitle={course.title} onCreated={() => router.refresh()} />
+                  <div onClick={(e) => e.stopPropagation()} className="flex-shrink-0">
+                    <CreateModuleDialog courseId={course.id} courseTitle={course.title} onCreated={() => router.refresh()} />
+                  </div>
                 </button>
               </div>
 
@@ -180,31 +182,31 @@ export function AdminCourseStructure({ courses }: AdminCourseStructureProps) {
                         <div className="bg-muted/20">
                           <button
                             onClick={() => toggleModule(module.id)}
-                            className="w-full flex items-center justify-between p-3 hover:bg-muted/30 transition-colors"
+                            className="w-full flex items-center justify-between p-2 sm:p-3 hover:bg-muted/30 transition-colors"
                           >
-                            <div className="flex items-center gap-2 flex-1">
+                            <div className="flex items-center gap-1 sm:gap-2 flex-1 min-w-0">
                               {openModules.has(module.id) ? (
-                                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
                               ) : (
-                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
                               )}
-                              <GripVertical className="h-4 w-4 text-muted-foreground" />
-                              <div className="text-left flex-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-medium text-sm">{module.title}</span>
-                                  <Badge variant="secondary" className="text-xs">
+                              <GripVertical className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground hidden sm:block flex-shrink-0" />
+                              <div className="text-left flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-medium text-xs sm:text-sm truncate">{module.title}</span>
+                                  <Badge variant="secondary" className="text-xs flex-shrink-0">
                                     Orden: {module.order_index}
                                   </Badge>
                                 </div>
                                 {module.description && (
-                                  <p className="text-xs text-muted-foreground line-clamp-1">{module.description}</p>
+                                  <p className="text-xs text-muted-foreground line-clamp-1 hidden sm:block">{module.description}</p>
                                 )}
                                 <p className="text-xs text-muted-foreground">
                                   {module.lessons.length} lección{module.lessons.length !== 1 ? 'es' : ''}
                                 </p>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                               <CreateLessonDialog moduleId={module.id} moduleTitle={module.title} onCreated={() => router.refresh()} />
                               <EditModuleDialog module={module} onUpdated={() => router.refresh()} />
                               <DeleteModuleDialog module={module} onDeleted={() => router.refresh()} />
@@ -228,22 +230,22 @@ export function AdminCourseStructure({ courses }: AdminCourseStructureProps) {
                                   return (
                                     <div
                                       key={lesson.id}
-                                      className="flex items-center justify-between p-2 rounded hover:bg-muted/50 group"
+                                      className="flex items-center justify-between p-2 rounded hover:bg-muted/50 group gap-2"
                                     >
-                                      <div className="flex items-center gap-2 flex-1">
-                                        <GripVertical className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                                        <TypeIcon className="h-4 w-4 text-muted-foreground" />
-                                        <span className="text-sm">{lesson.title}</span>
-                                        <Badge variant="outline" className="text-xs">
+                                      <div className="flex items-center gap-1 sm:gap-2 flex-1 min-w-0">
+                                        <GripVertical className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block flex-shrink-0" />
+                                        <TypeIcon className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
+                                        <span className="text-xs sm:text-sm truncate">{lesson.title}</span>
+                                        <Badge variant="outline" className="text-xs flex-shrink-0 hidden sm:inline-flex">
                                           {lesson.order_index}
                                         </Badge>
                                         {lesson.duration_minutes && (
-                                          <span className="text-xs text-muted-foreground">
+                                          <span className="text-xs text-muted-foreground flex-shrink-0 hidden sm:inline">
                                             {lesson.duration_minutes} min
                                           </span>
                                         )}
                                       </div>
-                                      <div className="flex items-center gap-1">
+                                      <div className="flex items-center gap-1 flex-shrink-0">
                                         <EditLessonDialog lesson={lesson} moduleId={module.id} onUpdated={() => router.refresh()} />
                                         <DeleteLessonDialog lesson={lesson} onDeleted={() => router.refresh()} />
                                       </div>
