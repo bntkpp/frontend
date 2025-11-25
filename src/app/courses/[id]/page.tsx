@@ -60,20 +60,30 @@ export default async function CoursePage({ params }: { params: Promise<{ id: str
     .eq("course_id", id)
     .order("order_index", { ascending: true })
 
-  // Detect payment type
-  const isOneTimePayment = course.payment_type === "one_time" || !!course.one_time_price
+  // Get subscription plans for this course
+  const { data: subscriptionPlans } = await supabase
+    .from("subscription_plans")
+    .select("*")
+    .eq("course_id", id)
+    .eq("is_active", true)
+    .order("display_order", { ascending: true })
 
-  // Calculate savings (only for subscription courses)
-  const calculateSavings = (monthlyPrice: number, totalPrice: number, months: number) => {
-    if (!monthlyPrice || !totalPrice) return { savings: 0, savingsPercent: 0, savingsAmount: 0 }
-    const regularTotal = monthlyPrice * months
+  // Detect payment type
+  const isOneTimePayment = course.payment_type === "one_time"
+
+  // Calculate savings for subscription plans
+  const calculateSavings = (cheapestMonthlyRate: number, totalPrice: number, months: number) => {
+    if (!cheapestMonthlyRate || !totalPrice) return { savings: 0, savingsPercent: 0, savingsAmount: 0 }
+    const regularTotal = cheapestMonthlyRate * months
     const savings = regularTotal - totalPrice
     const savingsPercent = Math.round((savings / regularTotal) * 100)
     return { savings, savingsPercent, savingsAmount: savings }
   }
 
-  const savings4Months = isOneTimePayment ? { savings: 0, savingsPercent: 0, savingsAmount: 0 } : calculateSavings(course.price_1_month, course.price_4_months, 4)
-  const savings8Months = isOneTimePayment ? { savings: 0, savingsPercent: 0, savingsAmount: 0 } : calculateSavings(course.price_1_month, course.price_8_months, 8)
+  // Get the cheapest monthly rate for calculating savings
+  const cheapestMonthlyRate = subscriptionPlans && subscriptionPlans.length > 0
+    ? Math.min(...subscriptionPlans.map(p => p.price / p.duration_months))
+    : 0
 
   return (
     <main className="min-h-screen flex flex-col">
@@ -164,114 +174,83 @@ export default async function CoursePage({ params }: { params: Promise<{ id: str
                           </Button>
                         )}
                       </div>
+                    ) : subscriptionPlans && subscriptionPlans.length > 0 ? (
+                      <Tabs defaultValue={subscriptionPlans[0]?.id} className="w-full mb-6">
+                        <TabsList className={`grid w-full ${subscriptionPlans.length === 1 ? 'grid-cols-1' : subscriptionPlans.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                          {subscriptionPlans.map((plan) => {
+                            const monthlyRate = plan.price / plan.duration_months
+                            const savings = plan.duration_months > 1 
+                              ? calculateSavings(cheapestMonthlyRate, plan.price, plan.duration_months)
+                              : { savings: 0, savingsPercent: 0, savingsAmount: 0 }
+
+                            return (
+                              <TabsTrigger key={plan.id} value={plan.id} className="text-xs">
+                                <div className="flex flex-col items-center">
+                                  <span>{plan.duration_months} {plan.duration_months === 1 ? 'Mes' : 'Meses'}</span>
+                                  {savings.savingsPercent > 0 && (
+                                    <Badge variant="secondary" className="text-[10px] px-1 py-0 mt-0.5 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                      -{savings.savingsPercent}%
+                                    </Badge>
+                                  )}
+                                </div>
+                              </TabsTrigger>
+                            )
+                          })}
+                        </TabsList>
+
+                        {subscriptionPlans.map((plan) => {
+                          const monthlyRate = plan.price / plan.duration_months
+                          const savings = plan.duration_months > 1 
+                            ? calculateSavings(cheapestMonthlyRate, plan.price, plan.duration_months)
+                            : { savings: 0, savingsPercent: 0, savingsAmount: 0 }
+
+                          return (
+                            <TabsContent key={plan.id} value={plan.id} className="space-y-4 mt-6">
+                              <div className="text-center">
+                                <p className="text-4xl font-bold text-primary mb-1">
+                                  ${plan.price.toLocaleString("es-CL")}
+                                </p>
+                                {plan.duration_months > 1 && (
+                                  <p className="text-sm text-muted-foreground mb-2">
+                                    ${Math.round(monthlyRate).toLocaleString("es-CL")}/mes
+                                  </p>
+                                )}
+                                {savings.savingsPercent > 0 && (
+                                  <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                    <TrendingUp className="h-3 w-3 mr-1" />
+                                    Ahorras ${savings.savingsAmount.toLocaleString("es-CL")} ({savings.savingsPercent}%)
+                                  </Badge>
+                                )}
+                              </div>
+                              {isEnrolled ? (
+                                <Button size="lg" className="w-full" asChild>
+                                  <Link href={`/learn/${id}`}>Ir al Curso</Link>
+                                </Button>
+                              ) : (
+                                <Button size="lg" className="w-full" asChild>
+                                  <Link href={user ? `/checkout/${id}?plan=${plan.id}` : "/auth/sign-up"}>
+                                    {user ? `Comprar ${plan.name || `Plan ${plan.duration_months} ${plan.duration_months === 1 ? 'Mes' : 'Meses'}`}` : "Registrarse"}
+                                  </Link>
+                                </Button>
+                              )}
+                              {plan.is_popular && (
+                                <p className="text-xs text-center text-muted-foreground">
+                                  Plan Popular - Mejor relación precio/duración
+                                </p>
+                              )}
+                              {plan.description && (
+                                <p className="text-xs text-center text-muted-foreground">
+                                  {plan.description}
+                                </p>
+                              )}
+                            </TabsContent>
+                          )
+                        })}
+                      </Tabs>
                     ) : (
-                      <Tabs defaultValue="4_months" className="w-full mb-6">
-                      <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="1_month" className="text-xs">1 Mes</TabsTrigger>
-                        <TabsTrigger value="4_months" className="text-xs">
-                          <div className="flex flex-col items-center">
-                            <span>4 Meses</span>
-                            {savings4Months.savingsPercent > 0 && (
-                              <Badge variant="secondary" className="text-[10px] px-1 py-0 mt-0.5 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                                -{savings4Months.savingsPercent}%
-                              </Badge>
-                            )}
-                          </div>
-                        </TabsTrigger>
-                        <TabsTrigger value="8_months" className="text-xs">
-                          <div className="flex flex-col items-center">
-                            <span>8 Meses</span>
-                            {savings8Months.savingsPercent > 0 && (
-                              <Badge variant="secondary" className="text-[10px] px-1 py-0 mt-0.5 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                                -{savings8Months.savingsPercent}%
-                              </Badge>
-                            )}
-                          </div>
-                        </TabsTrigger>
-                      </TabsList>
-
-                      <TabsContent value="1_month" className="space-y-4 mt-6">
-                        <div className="text-center">
-                          <p className="text-4xl font-bold text-primary mb-2">
-                            ${course.price_1_month.toLocaleString("es-CL")}
-                          </p>
-                          <p className="text-sm text-muted-foreground">Renovación mensual</p>
-                        </div>
-                        {isEnrolled ? (
-                          <Button size="lg" className="w-full" asChild>
-                            <Link href={`/learn/${id}`}>Ir al Curso</Link>
-                          </Button>
-                        ) : (
-                          <Button size="lg" className="w-full" asChild>
-                            <Link href={user ? `/checkout/${id}?plan=1_month` : "/auth/sign-up"}>
-                              {user ? "Comprar Plan Mensual" : "Registrarse"}
-                            </Link>
-                          </Button>
-                        )}
-                      </TabsContent>
-
-                      <TabsContent value="4_months" className="space-y-4 mt-6">
-                        <div className="text-center">
-                          <p className="text-4xl font-bold text-primary mb-1">
-                            ${course.price_4_months.toLocaleString("es-CL")}
-                          </p>
-                          <p className="text-sm text-muted-foreground mb-2">
-                            ${Math.round(course.price_4_months / 4).toLocaleString("es-CL")}/mes
-                          </p>
-                          {savings4Months.savingsPercent > 0 && (
-                            <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                              <TrendingUp className="h-3 w-3 mr-1" />
-                              Ahorras ${savings4Months.savingsAmount.toLocaleString("es-CL")} ({savings4Months.savingsPercent}%)
-                            </Badge>
-                          )}
-                        </div>
-                        {isEnrolled ? (
-                          <Button size="lg" className="w-full" asChild>
-                            <Link href={`/learn/${id}`}>Ir al Curso</Link>
-                          </Button>
-                        ) : (
-                          <Button size="lg" className="w-full" asChild>
-                            <Link href={user ? `/checkout/${id}?plan=4_months` : "/auth/sign-up"}>
-                              {user ? "Comprar Plan 4 Meses" : "Registrarse"}
-                            </Link>
-                          </Button>
-                        )}
-                        <p className="text-xs text-center text-muted-foreground">
-                          Plan Popular - Mejor relación precio/duración
-                        </p>
-                      </TabsContent>
-
-                      <TabsContent value="8_months" className="space-y-4 mt-6">
-                        <div className="text-center">
-                          <p className="text-4xl font-bold text-primary mb-1">
-                            ${course.price_8_months.toLocaleString("es-CL")}
-                          </p>
-                          <p className="text-sm text-muted-foreground mb-2">
-                            ${Math.round(course.price_8_months / 8).toLocaleString("es-CL")}/mes
-                          </p>
-                          {savings8Months.savingsPercent > 0 && (
-                            <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                              <TrendingUp className="h-3 w-3 mr-1" />
-                              Ahorras ${savings8Months.savingsAmount.toLocaleString("es-CL")} ({savings8Months.savingsPercent}%)
-                            </Badge>
-                          )}
-                        </div>
-                        {isEnrolled ? (
-                          <Button size="lg" className="w-full" asChild>
-                            <Link href={`/learn/${id}`}>Ir al Curso</Link>
-                          </Button>
-                        ) : (
-                          <Button size="lg" className="w-full" asChild>
-                            <Link href={user ? `/checkout/${id}?plan=8_months` : "/auth/sign-up"}>
-                              {user ? "Comprar Plan 8 Meses" : "Registrarse"}
-                            </Link>
-                          </Button>
-                        )}
-                        <p className="text-xs text-center text-muted-foreground">
-                          Máximo Ahorro - Prepárate con tiempo
-                        </p>
-                      </TabsContent>
-                    </Tabs>
+                      <div className="space-y-4 text-center py-4">
+                        <p className="text-muted-foreground">No hay planes disponibles</p>
+                      </div>
                     )}
 
                     <div className="space-y-2 text-sm border-t pt-4">

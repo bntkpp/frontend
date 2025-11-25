@@ -190,6 +190,19 @@ export default function CheckoutPage() {
   const addonPrice = course.has_questions_pack ? (course.questions_pack_price || 0) : 0
   const totalPrice = currentPrice + (includePreguntasAdicionales ? addonPrice : 0)
 
+  // Obtener planes disponibles (solo los que tienen precio configurado)
+  const availablePlans: Plan[] = []
+  if (course.price_1_month) availablePlans.push("1_month")
+  if (course.price_4_months) availablePlans.push("4_months")
+  if (course.price_8_months) availablePlans.push("8_months")
+
+  // Si el plan seleccionado no está disponible, seleccionar el primero disponible
+  useEffect(() => {
+    if (availablePlans.length > 0 && !availablePlans.includes(selectedPlan)) {
+      setSelectedPlan(availablePlans[0])
+    }
+  }, [availablePlans, selectedPlan])
+
   return (
     <main className="min-h-screen flex flex-col">
       <Navbar />
@@ -228,96 +241,108 @@ export default function CheckoutPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {/* Plan 1 Mes */}
-                    <button
-                      onClick={() => setSelectedPlan("1_month")}
-                      className={`w-full p-4 rounded-lg border-2 transition-all text-left relative ${
-                        selectedPlan === "1_month"
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:border-primary/50"
-                      }`}
-                    >
-                      {calculateSavings("1_month") && (
-                        <Badge className="absolute -top-2 -right-2 bg-green-600 hover:bg-green-700">
-                          Ahorra {calculateSavings("1_month")!.savingsPercent}%
-                        </Badge>
-                      )}
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-semibold">Plan Mensual</p>
-                          <p className="text-sm text-muted-foreground">Renovación mensual</p>
+                    {/* Plan 1 Mes - Solo mostrar si está configurado */}
+                    {course.price_1_month && (
+                      <button
+                        onClick={() => setSelectedPlan("1_month")}
+                        className={`w-full p-4 rounded-lg border-2 transition-all text-left relative ${
+                          selectedPlan === "1_month"
+                            ? "border-primary bg-primary/5"
+                            : "border-border hover:border-primary/50"
+                        }`}
+                      >
+                        {calculateSavings("1_month") && (
+                          <Badge className="absolute -top-2 -right-2 bg-green-600 hover:bg-green-700">
+                            Ahorra {calculateSavings("1_month")!.savingsPercent}%
+                          </Badge>
+                        )}
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-semibold">Plan Mensual</p>
+                            <p className="text-sm text-muted-foreground">Renovación mensual</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm text-muted-foreground line-through">
+                              ${(60000).toLocaleString("es-CL")}
+                            </p>
+                            <p className="text-2xl font-bold">${course.price_1_month.toLocaleString("es-CL")}</p>
+                            <p className="text-xs text-muted-foreground">/mes</p>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-sm text-muted-foreground line-through">
-                            ${(60000).toLocaleString("es-CL")}
-                          </p>
-                          <p className="text-2xl font-bold">${course.price_1_month.toLocaleString("es-CL")}</p>
-                          <p className="text-xs text-muted-foreground">/mes</p>
-                        </div>
-                      </div>
-                    </button>
+                      </button>
+                    )}
 
-                    {/* Plan 4 Meses */}
-                    <button
-                      onClick={() => setSelectedPlan("4_months")}
-                      className={`w-full p-4 rounded-lg border-2 transition-all text-left relative ${
-                        selectedPlan === "4_months"
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:border-primary/50"
-                      }`}
-                    >
-                      {calculateSavings("4_months") && (
-                        <Badge className="absolute -top-2 -right-2 bg-green-600 hover:bg-green-700">
-                          Ahorra {calculateSavings("4_months")!.savingsPercent}%
-                        </Badge>
-                      )}
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-semibold">Plan 4 Meses</p>
-                          <p className="text-sm text-muted-foreground">
-                            ${(course.price_4_months / 4).toLocaleString("es-CL")}/mes
-                          </p>
+                    {/* Plan 4 Meses - Solo mostrar si está configurado */}
+                    {course.price_4_months && (
+                      <button
+                        onClick={() => setSelectedPlan("4_months")}
+                        className={`w-full p-4 rounded-lg border-2 transition-all text-left relative ${
+                          selectedPlan === "4_months"
+                            ? "border-primary bg-primary/5"
+                            : "border-border hover:border-primary/50"
+                        }`}
+                      >
+                        {calculateSavings("4_months") && (
+                          <Badge className="absolute -top-2 -right-2 bg-green-600 hover:bg-green-700">
+                            Ahorra {calculateSavings("4_months")!.savingsPercent}%
+                          </Badge>
+                        )}
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-semibold">Plan 4 Meses</p>
+                            <p className="text-sm text-muted-foreground">
+                              ${(course.price_4_months / 4).toLocaleString("es-CL")}/mes
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm text-muted-foreground line-through">
+                              ${(240000).toLocaleString("es-CL")}
+                            </p>
+                            <p className="text-2xl font-bold">${course.price_4_months.toLocaleString("es-CL")}</p>
+                            <p className="text-xs text-muted-foreground">Pago único</p>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-sm text-muted-foreground line-through">
-                            ${(240000).toLocaleString("es-CL")}
-                          </p>
-                          <p className="text-2xl font-bold">${course.price_4_months.toLocaleString("es-CL")}</p>
-                          <p className="text-xs text-muted-foreground">Pago único</p>
-                        </div>
-                      </div>
-                    </button>
+                      </button>
+                    )}
 
-                    {/* Plan 8 Meses */}
-                    <button
-                      onClick={() => setSelectedPlan("8_months")}
-                      className={`w-full p-4 rounded-lg border-2 transition-all text-left relative ${
-                        selectedPlan === "8_months"
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:border-primary/50"
-                      }`}
-                    >
-                      {calculateSavings("8_months") && (
-                        <Badge className="absolute -top-2 -right-2 bg-green-600 hover:bg-green-700">
-                          Ahorra {calculateSavings("8_months")!.savingsPercent}%
-                        </Badge>
-                      )}
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-semibold">Plan 8 Meses</p>
-                          <p className="text-sm text-muted-foreground">
-                            ${(course.price_8_months / 8).toLocaleString("es-CL")}/mes
-                          </p>
+                    {/* Plan 8 Meses - Solo mostrar si está configurado */}
+                    {course.price_8_months && (
+                      <button
+                        onClick={() => setSelectedPlan("8_months")}
+                        className={`w-full p-4 rounded-lg border-2 transition-all text-left relative ${
+                          selectedPlan === "8_months"
+                            ? "border-primary bg-primary/5"
+                            : "border-border hover:border-primary/50"
+                        }`}
+                      >
+                        {calculateSavings("8_months") && (
+                          <Badge className="absolute -top-2 -right-2 bg-green-600 hover:bg-green-700">
+                            Ahorra {calculateSavings("8_months")!.savingsPercent}%
+                          </Badge>
+                        )}
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-semibold">Plan 8 Meses</p>
+                            <p className="text-sm text-muted-foreground">
+                              ${(course.price_8_months / 8).toLocaleString("es-CL")}/mes
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm text-muted-foreground line-through">
+                              ${(480000).toLocaleString("es-CL")}
+                            </p>
+                            <p className="text-2xl font-bold">${course.price_8_months.toLocaleString("es-CL")}</p>
+                            <p className="text-xs text-muted-foreground">Pago único</p>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-sm text-muted-foreground line-through">
-                            ${(480000).toLocaleString("es-CL")}
-                          </p>
-                          <p className="text-2xl font-bold">${course.price_8_months.toLocaleString("es-CL")}</p>
-                          <p className="text-xs text-muted-foreground">Pago único</p>
-                        </div>
+                      </button>
+                    )}
+
+                    {availablePlans.length === 0 && (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <p>No hay planes de pago configurados para este curso.</p>
                       </div>
-                    </button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
