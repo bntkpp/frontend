@@ -29,6 +29,11 @@ export default async function LessonPage({
     redirect("/courses")
   }
 
+  // Check if enrollment has expired
+  if (enrollment.expires_at && new Date(enrollment.expires_at) < new Date()) {
+    redirect("/dashboard?expired=true")
+  }
+
   // Get course details
   const { data: course } = await supabase.from("courses").select("*").eq("id", courseId).single()
 

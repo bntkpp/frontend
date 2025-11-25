@@ -24,6 +24,11 @@ export default async function LearnCoursePage({ params }: { params: Promise<{ co
     redirect("/courses")
   }
 
+  // Check if enrollment has expired
+  if (enrollment.expires_at && new Date(enrollment.expires_at) < new Date()) {
+    redirect("/dashboard?expired=true")
+  }
+
   // Get first lesson
   const { data: modules } = await supabase
     .from("modules")
