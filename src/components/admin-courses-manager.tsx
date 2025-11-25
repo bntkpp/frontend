@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
+import { useEffect } from "react"
 
 // Function to convert YouTube URLs to embed format
 function convertToYouTubeEmbed(url: string): string {
@@ -67,7 +68,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Pencil, Trash2, Plus, DollarSign, Clock, BookOpen, Video } from "lucide-react"
+import { Pencil, Trash2, Plus, DollarSign, Clock, BookOpen, Video, Settings } from "lucide-react"
+import { AdminSubscriptionPlansManager } from "@/components/admin-subscription-plans-manager"
 
 interface AdminCoursesManagerProps {
   initialCourses: any[]
@@ -107,66 +109,12 @@ export function AdminCoursesManager({ initialCourses }: AdminCoursesManagerProps
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {courses.map((course) => (
-          <Card key={course.id}>
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <CardTitle className="line-clamp-1">{course.title}</CardTitle>
-                  <CardDescription className="line-clamp-2 mt-1">
-                    {course.short_description || course.description}
-                  </CardDescription>
-                </div>
-                <div className="flex gap-2">
-                  <EditCourseDialog course={course} onUpdated={handleCourseUpdated} />
-                  <DeleteCourseDialog course={course} onDeleted={handleCourseDeleted} />
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <DollarSign className="h-4 w-4 text-muted-foreground" />
-                  <span>1 mes: ${course.price_1_month?.toLocaleString("es-CL")}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <DollarSign className="h-4 w-4 text-muted-foreground" />
-                  <span>4 meses: ${course.price_4_months?.toLocaleString("es-CL")}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <DollarSign className="h-4 w-4 text-muted-foreground" />
-                  <span>8 meses: ${course.price_8_months?.toLocaleString("es-CL")}</span>
-                </div>
-                {course.duration_hours && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span>{course.duration_hours} horas</span>
-                  </div>
-                )}
-                {course.video_url && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Video className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-green-600">Video añadido</span>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-            <CardFooter>
-              <div className="flex items-center justify-between w-full">
-                <span
-                  className={`text-xs px-2 py-1 rounded-full ${
-                    course.published
-                      ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                      : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200"
-                  }`}
-                >
-                  {course.published ? "Publicado" : "Borrador"}
-                </span>
-                {course.level && (
-                  <span className="text-xs text-muted-foreground capitalize">{course.level}</span>
-                )}
-              </div>
-            </CardFooter>
-          </Card>
+          <CourseCard 
+            key={course.id} 
+            course={course} 
+            onUpdated={handleCourseUpdated}
+            onDeleted={handleCourseDeleted}
+          />
         ))}
       </div>
 
@@ -179,6 +127,138 @@ export function AdminCoursesManager({ initialCourses }: AdminCoursesManagerProps
         </Card>
       )}
     </div>
+  )
+}
+
+// ==================== COURSE CARD ====================
+function CourseCard({ 
+  course, 
+  onUpdated, 
+  onDeleted 
+}: { 
+  course: any
+  onUpdated: (course: any) => void
+  onDeleted: (courseId: string) => void
+}) {
+  const [plans, setPlans] = useState<any[]>([])
+  const [isLoadingPlans, setIsLoadingPlans] = useState(true)
+
+  // Cargar planes de suscripción si el curso es de tipo subscription
+  useEffect(() => {
+    if (course.payment_type === "subscription") {
+      loadPlans()
+    } else {
+      setIsLoadingPlans(false)
+    }
+  }, [course.id, course.payment_type])
+
+  const loadPlans = async () => {
+    try {
+      const { createClient } = await import("@/lib/supabase/client")
+      const supabase = createClient()
+      
+      const { data, error } = await supabase
+        .from("subscription_plans")
+        .select("*")
+        .eq("course_id", course.id)
+        .eq("is_active", true)
+        .order("display_order", { ascending: true })
+
+      if (!error && data) {
+        setPlans(data)
+      }
+    } catch (error) {
+      console.error("Error loading plans:", error)
+    } finally {
+      setIsLoadingPlans(false)
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <CardTitle className="line-clamp-1">{course.title}</CardTitle>
+            <CardDescription className="line-clamp-2 mt-1">
+              {course.short_description || course.description}
+            </CardDescription>
+          </div>
+          <div className="flex gap-2">
+            <EditCourseDialog course={course} onUpdated={onUpdated} />
+            <DeleteCourseDialog course={course} onDeleted={onDeleted} />
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          {course.payment_type === "subscription" && (
+            <ManageSubscriptionPlansDialog 
+              courseId={course.id} 
+              courseName={course.title}
+              key={`plans-${course.id}-${plans.length}`}
+            />
+          )}
+          
+          <div className="space-y-2 pt-2 border-t">
+            {course.payment_type === "one_time" && course.one_time_price && (
+              <div className="flex items-center gap-2 text-sm">
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                <span>Pago único: ${course.one_time_price?.toLocaleString("es-CL")}</span>
+              </div>
+            )}
+            
+            {course.payment_type === "subscription" && !isLoadingPlans && (
+              <>
+                {plans.length === 0 ? (
+                  <div className="text-xs text-muted-foreground italic">
+                    Sin planes configurados
+                  </div>
+                ) : (
+                  plans.map((plan) => (
+                    <div key={plan.id} className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <DollarSign className="h-4 w-4" />
+                      <span>
+                        {plan.name || `${plan.duration_months} ${plan.duration_months === 1 ? 'mes' : 'meses'}`}: ${plan.price?.toLocaleString("es-CL")}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </>
+            )}
+            
+            {course.duration_hours && (
+              <div className="flex items-center gap-2 text-sm">
+                <Clock className="h-4 w-4 text-muted-foreground" />
+                <span>{course.duration_hours} horas</span>
+              </div>
+            )}
+            {course.video_url && (
+              <div className="flex items-center gap-2 text-sm">
+                <Video className="h-4 w-4 text-muted-foreground" />
+                <span className="text-green-600">Video añadido</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </CardContent>
+      <CardFooter>
+        <div className="flex items-center justify-between w-full">
+          <span
+            className={`text-xs px-2 py-1 rounded-full ${
+              course.published
+                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200"
+            }`}
+          >
+            {course.published ? "Publicado" : "Borrador"}
+          </span>
+          {course.level && (
+            <span className="text-xs text-muted-foreground capitalize">{course.level}</span>
+          )}
+        </div>
+      </CardFooter>
+    </Card>
   )
 }
 
@@ -206,9 +286,6 @@ function CreateCourseDialog({ onCreated }: { onCreated: (course: any) => void })
       video_url: convertToYouTubeEmbed(videoUrl),
       payment_type: paymentType,
       one_time_price: paymentType === "one_time" ? parseFloat(formData.get("one_time_price") as string) || null : null,
-      price_1_month: paymentType === "subscription" ? parseFloat(formData.get("price_1_month") as string) || null : null,
-      price_4_months: paymentType === "subscription" ? parseFloat(formData.get("price_4_months") as string) || null : null,
-      price_8_months: paymentType === "subscription" ? parseFloat(formData.get("price_8_months") as string) || null : null,
       duration_hours: parseInt(formData.get("duration_hours") as string) || null,
       level: formData.get("level") as string,
       published: formData.get("published") === "on",
@@ -304,36 +381,14 @@ function CreateCourseDialog({ onCreated }: { onCreated: (course: any) => void })
                 />
               </div>
             ) : (
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="price_1_month">Precio 1 Mes (CLP)</Label>
-                  <Input
-                    id="price_1_month"
-                    name="price_1_month"
-                    type="number"
-                    defaultValue={35000}
-                    step="1000"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="price_4_months">Precio 4 Meses (CLP)</Label>
-                  <Input
-                    id="price_4_months"
-                    name="price_4_months"
-                    type="number"
-                    defaultValue={140000}
-                    step="1000"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="price_8_months">Precio 8 Meses (CLP)</Label>
-                  <Input
-                    id="price_8_months"
-                    name="price_8_months"
-                    type="number"
-                    defaultValue={280000}
-                    step="1000"
-                  />
+              <div className="space-y-3">
+                <div className="p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  <p className="text-sm text-blue-900 dark:text-blue-100">
+                    💡 <strong>Nuevo sistema de planes flexible:</strong>
+                  </p>
+                  <p className="text-sm text-blue-800 dark:text-blue-200 mt-1">
+                    Después de crear el curso, podrás agregar planes de suscripción con cualquier duración (1, 2, 3, 6, 12 meses, etc.) desde el botón "Gestionar Planes".
+                  </p>
                 </div>
               </div>
             )}
@@ -430,9 +485,6 @@ function EditCourseDialog({
       video_url: convertToYouTubeEmbed(videoUrl),
       payment_type: currentPaymentType,
       one_time_price: currentPaymentType === "one_time" ? parseFloat(formData.get("one_time_price") as string) || null : null,
-      price_1_month: currentPaymentType === "subscription" ? parseFloat(formData.get("price_1_month") as string) || null : null,
-      price_4_months: currentPaymentType === "subscription" ? parseFloat(formData.get("price_4_months") as string) || null : null,
-      price_8_months: currentPaymentType === "subscription" ? parseFloat(formData.get("price_8_months") as string) || null : null,
       duration_hours: parseInt(formData.get("duration_hours") as string) || null,
       level: formData.get("level") as string,
       published: formData.get("published") === "on",
@@ -552,36 +604,14 @@ function EditCourseDialog({
               />
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-price_1_month">Precio 1 Mes (CLP)</Label>
-                <Input
-                  id="edit-price_1_month"
-                  name="price_1_month"
-                  type="number"
-                  defaultValue={course.price_1_month || 35000}
-                  step="1000"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-price_4_months">Precio 4 Meses (CLP)</Label>
-                <Input
-                  id="edit-price_4_months"
-                  name="price_4_months"
-                  type="number"
-                  defaultValue={course.price_4_months || 140000}
-                  step="1000"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-price_8_months">Precio 8 Meses (CLP)</Label>
-                <Input
-                  id="edit-price_8_months"
-                  name="price_8_months"
-                  type="number"
-                  defaultValue={course.price_8_months || 280000}
-                  step="1000"
-                />
+            <div className="space-y-3">
+              <div className="p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <p className="text-sm text-blue-900 dark:text-blue-100">
+                  💡 <strong>Gestión de planes de suscripción:</strong>
+                </p>
+                <p className="text-sm text-blue-800 dark:text-blue-200 mt-1">
+                  Los planes de suscripción ahora se gestionan desde el botón "Gestionar Planes" en la tarjeta del curso. Puedes crear planes con cualquier duración.
+                </p>
               </div>
             </div>
           )}
@@ -711,6 +741,83 @@ function DeleteCourseDialog({
             {isDeleting ? "Eliminando..." : "Eliminar"}
           </Button>
         </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ==================== MANAGE SUBSCRIPTION PLANS DIALOG ====================
+function ManageSubscriptionPlansDialog({
+  courseId,
+  courseName,
+}: {
+  courseId: string
+  courseName: string
+}) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [plans, setPlans] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
+
+  const loadPlans = async () => {
+    setIsLoading(true)
+    try {
+      const { createClient } = await import("@/lib/supabase/client")
+      const supabase = createClient()
+      
+      const { data, error } = await supabase
+        .from("subscription_plans")
+        .select("*")
+        .eq("course_id", courseId)
+        .eq("is_active", true)
+        .order("display_order", { ascending: true })
+
+      if (error) throw error
+      setPlans(data || [])
+    } catch (error) {
+      console.error("Error loading plans:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleOpenChange = (open: boolean) => {
+    setIsOpen(open)
+    if (open) {
+      loadPlans()
+    } else {
+      // Cuando se cierra el diálogo, refrescar la página para actualizar los planes en las tarjetas
+      router.refresh()
+    }
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+      <DialogTrigger asChild>
+        <Button variant="outline" className="w-full" size="sm">
+          <Settings className="h-4 w-4 mr-2" />
+          Gestionar Planes
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Planes de Suscripción</DialogTitle>
+          <DialogDescription>
+            {courseName}
+          </DialogDescription>
+        </DialogHeader>
+        
+        {isLoading ? (
+          <div className="py-8 text-center text-muted-foreground">
+            Cargando planes...
+          </div>
+        ) : (
+          <AdminSubscriptionPlansManager
+            courseId={courseId}
+            courseName={courseName}
+            plans={plans}
+          />
+        )}
       </DialogContent>
     </Dialog>
   )
