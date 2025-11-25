@@ -72,26 +72,34 @@ export function AdminModulesManager({ initialModules, courses }: AdminModulesMan
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Módulos</h1>
-          <p className="text-muted-foreground">Gestiona los módulos de los cursos</p>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-indigo-500/10 rounded-xl">
+            <Layers3 className="h-6 w-6 text-indigo-600" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold">Módulos</h2>
+            <p className="text-sm text-muted-foreground">Gestiona los módulos de los cursos</p>
+          </div>
         </div>
         <CreateModuleDialog courses={courses} onCreated={handleModuleCreated} />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {modules.map((module) => (
-          <Card key={module.id}>
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <CardTitle className="line-clamp-1">{module.title}</CardTitle>
-                  <CardDescription className="mt-1">
-                    {module.courses.title}
+          <Card key={module.id} className="hover:shadow-md transition-shadow">
+            <CardHeader className="pb-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <BookOpen className="h-4 w-4 text-indigo-600 flex-shrink-0" />
+                    <CardTitle className="line-clamp-1 text-base">{module.title}</CardTitle>
+                  </div>
+                  <CardDescription className="text-xs flex items-center gap-1">
+                    <span className="truncate">{module.courses.title}</span>
                   </CardDescription>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-1 flex-shrink-0">
                   <EditModuleDialog
                     module={module}
                     courses={courses}
@@ -101,14 +109,19 @@ export function AdminModulesManager({ initialModules, courses }: AdminModulesMan
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
-              {module.description && (
-                <p className="text-sm text-muted-foreground line-clamp-3">
+            <CardContent className="pt-0">
+              {module.description ? (
+                <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
                   {module.description}
                 </p>
+              ) : (
+                <p className="text-sm text-muted-foreground italic mb-3">Sin descripción</p>
               )}
-              <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
-                <span>Orden: {module.order_index}</span>
+              <div className="flex items-center justify-between pt-3 border-t">
+                <span className="text-xs text-muted-foreground">Orden</span>
+                <span className="text-xs font-medium bg-indigo-500/10 text-indigo-700 px-2 py-1 rounded">
+                  {module.order_index}
+                </span>
               </div>
             </CardContent>
           </Card>
@@ -116,10 +129,16 @@ export function AdminModulesManager({ initialModules, courses }: AdminModulesMan
       </div>
 
       {modules.length === 0 && (
-        <Card>
-          <CardContent className="pt-6 text-center py-12">
-            <Layers3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">No hay módulos creados aún</p>
+        <Card className="border-dashed">
+          <CardContent className="pt-6 text-center py-16">
+            <div className="p-4 bg-indigo-500/10 rounded-full w-fit mx-auto mb-4">
+              <Layers3 className="h-12 w-12 text-indigo-600" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">No hay módulos creados</h3>
+            <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
+              Los módulos organizan las lecciones dentro de cada curso. Crea tu primer módulo para comenzar.
+            </p>
+            <CreateModuleDialog courses={courses} onCreated={handleModuleCreated} />
           </CardContent>
         </Card>
       )}

@@ -273,23 +273,94 @@ export function AdminLessonsManager({ initialLessons, modules }: AdminLessonsMan
   }
 
   return (
-    <Tabs defaultValue="list" className="space-y-4">
-      <TabsList>
-        <TabsTrigger value="list">Listado</TabsTrigger>
-        <TabsTrigger value="create">Crear</TabsTrigger>
-      </TabsList>
+    <div className="space-y-6">
+      {/* Header con estadísticas */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-cyan-500/10 rounded-lg">
+                <FileText className="h-5 w-5 text-cyan-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{filteredLessons.length}</p>
+                <p className="text-xs text-muted-foreground">Lecciones totales</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-indigo-500/10 rounded-lg">
+                <Video className="h-5 w-5 text-indigo-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">
+                  {filteredLessons.filter(l => l.lesson_type === 'video').length}
+                </p>
+                <p className="text-xs text-muted-foreground">Videos</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-purple-500/10 rounded-lg">
+                <File className="h-5 w-5 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">
+                  {filteredLessons.filter(l => l.lesson_type === 'reading' || l.lesson_type === 'pdf').length}
+                </p>
+                <p className="text-xs text-muted-foreground">Lecturas/PDFs</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Tabs defaultValue="list" className="space-y-4">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="list">
+            Listado
+          </TabsTrigger>
+          <TabsTrigger value="create">
+            Crear Nueva
+          </TabsTrigger>
+        </TabsList>
 
       <TabsContent value="list">
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-4">
             <div className="flex flex-col gap-4">
-              <CardTitle>Lecciones registradas</CardTitle>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg">Lecciones registradas</CardTitle>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Mostrando {filteredLessons.length} de {lessons.length} lecciones
+                  </p>
+                </div>
+                {(selectedCourseFilter !== "all" || selectedModuleFilter !== "all") && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedCourseFilter("all")
+                      setSelectedModuleFilter("all")
+                    }}
+                  >
+                    Limpiar filtros
+                  </Button>
+                )}
+              </div>
               
-              {/* Filtros */}
-              <div className="flex flex-col sm:flex-row gap-3">
+              {/* Filtros mejorados */}
+              <div className="grid gap-3 sm:grid-cols-2">
                 {/* Filtro por curso */}
-                <div className="flex-1">
-                  <Label htmlFor="course-filter" className="text-xs text-muted-foreground mb-1 block">
+                <div className="space-y-2">
+                  <Label htmlFor="course-filter" className="text-xs font-medium text-muted-foreground">
                     Filtrar por curso
                   </Label>
                   <select
@@ -298,7 +369,7 @@ export function AdminLessonsManager({ initialLessons, modules }: AdminLessonsMan
                     value={selectedCourseFilter}
                     onChange={(e) => handleCourseFilterChange(e.target.value)}
                   >
-                    <option value="all">Todos los cursos ({lessons.length})</option>
+                    <option value="all">Todos los cursos ({courses.length})</option>
                     {courses.map((course) => {
                       const count = lessons.filter((lesson) => {
                         const module = modules.find((m) => m.id === lesson.module_id)
@@ -314,8 +385,8 @@ export function AdminLessonsManager({ initialLessons, modules }: AdminLessonsMan
                 </div>
 
                 {/* Filtro por módulo */}
-                <div className="flex-1">
-                  <Label htmlFor="module-filter" className="text-xs text-muted-foreground mb-1 block">
+                <div className="space-y-2">
+                  <Label htmlFor="module-filter" className="text-xs font-medium text-muted-foreground">
                     Filtrar por módulo
                   </Label>
                   <select
@@ -342,35 +413,19 @@ export function AdminLessonsManager({ initialLessons, modules }: AdminLessonsMan
                   </select>
                 </div>
               </div>
-
-              {/* Indicador de filtros activos */}
-              {(selectedCourseFilter !== "all" || selectedModuleFilter !== "all") && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Badge variant="secondary" className="gap-1">
-                    {filteredLessons.length} lección{filteredLessons.length !== 1 ? "es" : ""} encontrada{filteredLessons.length !== 1 ? "s" : ""}
-                  </Badge>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setSelectedCourseFilter("all")
-                      setSelectedModuleFilter("all")
-                    }}
-                    className="h-7 text-xs"
-                  >
-                    Limpiar filtros
-                  </Button>
-                </div>
-              )}
             </div>
           </CardHeader>
+
           <CardContent>
             {filteredLessons.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                {selectedCourseFilter === "all" && selectedModuleFilter === "all"
-                  ? "Aún no hay lecciones creadas." 
-                  : "No hay lecciones que coincidan con los filtros seleccionados."}
-              </p>
+              <div className="text-center py-12">
+                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+                <p className="text-sm text-muted-foreground">
+                  {selectedCourseFilter === "all" && selectedModuleFilter === "all"
+                    ? "Aún no hay lecciones creadas." 
+                    : "No hay lecciones que coincidan con los filtros seleccionados."}
+                </p>
+              </div>
             ) : (
               <div className="rounded-md border">
                 <Table>
@@ -613,6 +668,7 @@ export function AdminLessonsManager({ initialLessons, modules }: AdminLessonsMan
         </Card>
       </TabsContent>
     </Tabs>
+    </div>
   )
 }
 
