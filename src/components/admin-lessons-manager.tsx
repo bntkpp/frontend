@@ -137,6 +137,7 @@ export function AdminLessonsManager({ initialLessons, modules }: AdminLessonsMan
     duration: "",
     videoUrl: "",
     content: "",
+    contentTitle: "",
   })
 
   const resetForm = () => {
@@ -148,6 +149,7 @@ export function AdminLessonsManager({ initialLessons, modules }: AdminLessonsMan
       duration: "",
       videoUrl: "",
       content: "",
+      contentTitle: "",
     })
   }
 
@@ -227,6 +229,7 @@ export function AdminLessonsManager({ initialLessons, modules }: AdminLessonsMan
       duration_minutes: formState.duration ? Number(formState.duration) : null,
       video_url: formState.videoUrl || null,
       content: formState.content || null,
+      content_title: formState.contentTitle || null,
     }
 
     const { data, error } = await supabase
@@ -388,10 +391,14 @@ export function AdminLessonsManager({ initialLessons, modules }: AdminLessonsMan
                       return (
                         <TableRow key={lesson.id}>
                           <TableCell>
-                            <div className="space-y-1">
-                              <p className="font-medium">{lesson.title}</p>
+                            <div className="space-y-1 max-w-md">
+                              <p className="font-medium truncate">{lesson.title}</p>
                               {lesson.content && (
-                                <p className="text-xs text-muted-foreground line-clamp-2">{lesson.content}</p>
+                                <p className="text-xs text-muted-foreground line-clamp-1">
+                                  {lesson.content.length > 100 
+                                    ? lesson.content.substring(0, 100) + '...' 
+                                    : lesson.content}
+                                </p>
                               )}
                             </div>
                           </TableCell>
@@ -564,16 +571,30 @@ export function AdminLessonsManager({ initialLessons, modules }: AdminLessonsMan
               </div>
 
               {(formState.lessonType === "reading" || formState.lessonType === "exercise") && (
-                <div className="space-y-2">
-                  <Label htmlFor="lesson-content">Contenido</Label>
-                  <Textarea
-                    id="lesson-content"
-                    value={formState.content}
-                    onChange={(event) => setFormState((prev) => ({ ...prev, content: event.target.value }))}
-                    placeholder="Escribe el contenido de la lección aquí..."
-                    rows={6}
-                  />
-                </div>
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="lesson-content-title">Título del Contenido (opcional)</Label>
+                    <Input
+                      id="lesson-content-title"
+                      value={formState.contentTitle}
+                      onChange={(event) => setFormState((prev) => ({ ...prev, contentTitle: event.target.value }))}
+                      placeholder="Ej: Introducción al tema, Conceptos básicos, etc."
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Si no agregas un título, no se mostrará ningún encabezado sobre el contenido
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lesson-content">Contenido</Label>
+                    <Textarea
+                      id="lesson-content"
+                      value={formState.content}
+                      onChange={(event) => setFormState((prev) => ({ ...prev, content: event.target.value }))}
+                      placeholder="Escribe el contenido de la lección aquí...&#10;&#10;Puedes usar saltos de línea y el formato se mantendrá."
+                      rows={8}
+                    />
+                  </div>
+                </>
               )}
 
               <Button type="submit" disabled={isCreating}>
@@ -617,6 +638,7 @@ function EditLessonDialog({
     duration: lesson.duration_minutes?.toString() || "",
     videoUrl: lesson.video_url || "",
     content: lesson.content || "",
+    contentTitle: (lesson as any).content_title || "",
   })
 
   // Sincronizar estado cuando cambia la lección
@@ -629,6 +651,7 @@ function EditLessonDialog({
       duration: lesson.duration_minutes?.toString() || "",
       videoUrl: lesson.video_url || "",
       content: lesson.content || "",
+      contentTitle: (lesson as any).content_title || "",
     })
   }, [lesson])
 
@@ -704,6 +727,7 @@ function EditLessonDialog({
         duration_minutes: state.duration ? Number(state.duration) : null,
         video_url: state.videoUrl || null,
         content: state.content || null,
+        content_title: state.contentTitle || null,
       }
 
       console.log('Payload a enviar:', payload) // Debug
@@ -896,16 +920,30 @@ function EditLessonDialog({
           </div>
 
           {(state.lessonType === "reading" || state.lessonType === "exercise") && (
-            <div className="space-y-2">
-              <Label htmlFor={`edit-lesson-content-${lesson.id}`}>Contenido</Label>
-              <Textarea
-                id={`edit-lesson-content-${lesson.id}`}
-                value={state.content}
-                onChange={(event) => setState((prev) => ({ ...prev, content: event.target.value }))}
-                rows={6}
-                placeholder="Escribe el contenido aquí..."
-              />
-            </div>
+            <>
+              <div className="space-y-2">
+                <Label htmlFor={`edit-lesson-content-title-${lesson.id}`}>Título del Contenido (opcional)</Label>
+                <Input
+                  id={`edit-lesson-content-title-${lesson.id}`}
+                  value={state.contentTitle}
+                  onChange={(event) => setState((prev) => ({ ...prev, contentTitle: event.target.value }))}
+                  placeholder="Ej: Introducción al tema, Conceptos básicos, etc."
+                />
+                <p className="text-xs text-muted-foreground">
+                  Si no agregas un título, no se mostrará ningún encabezado sobre el contenido
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor={`edit-lesson-content-${lesson.id}`}>Contenido</Label>
+                <Textarea
+                  id={`edit-lesson-content-${lesson.id}`}
+                  value={state.content}
+                  onChange={(event) => setState((prev) => ({ ...prev, content: event.target.value }))}
+                  rows={8}
+                  placeholder="Escribe el contenido aquí...&#10;&#10;Puedes usar saltos de línea y el formato se mantendrá."
+                />
+              </div>
+            </>
           )}
 
           <DialogFooter>

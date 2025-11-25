@@ -13,6 +13,7 @@ import {
   Layers3,
   LibraryBig,
   GraduationCap,
+  FolderTree,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
@@ -22,6 +23,7 @@ const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/users", label: "Usuarios", icon: Users },
   { href: "/admin/courses", label: "Cursos", icon: BookOpen },
+  { href: "/admin/structure", label: "Estructura", icon: FolderTree },
   { href: "/admin/modules", label: "Módulos", icon: Layers3 },
   { href: "/admin/lessons", label: "Lecciones", icon: LibraryBig },
   { href: "/admin/enrollments", label: "Inscripciones", icon: GraduationCap },

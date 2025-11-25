@@ -14,6 +14,7 @@ import {
   Settings,
   Home,
   CreditCard,
+  FolderTree,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -23,6 +24,7 @@ const navigation = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { name: "Usuarios", href: "/admin/users", icon: Users },
   { name: "Cursos", href: "/admin/courses", icon: BookOpen },
+  { name: "Estructura", href: "/admin/structure", icon: FolderTree },
   { name: "Módulos", href: "/admin/modules", icon: FileText },
   { name: "Lecciones", href: "/admin/lessons", icon: FileText },
   { name: "Inscripciones", href: "/admin/enrollments", icon: GraduationCap },

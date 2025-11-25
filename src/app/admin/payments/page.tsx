@@ -4,28 +4,29 @@ import { AdminLayout } from "@/components/admin-layout"
 import { AdminPaymentsManager } from "@/components/admin-payments-manager"
 import { NextRequest, NextResponse } from "next/server"
 import { MercadoPagoConfig, Payment } from "mercadopago"
+import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 
 const client = new MercadoPagoConfig({
   accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN!,
 })
-
-// Usar service role para bypasear RLS
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  }
-)
 
 export const dynamic = "force-dynamic"
 export const revalidate = 0
 
 export default async function AdminPaymentsPage() {
   const supabase = await createClient()
+
+  // Crear admin client dentro de la función
+  const supabaseAdmin = createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    }
+  )
 
   const {
     data: { user },
