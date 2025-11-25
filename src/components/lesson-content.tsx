@@ -269,46 +269,90 @@ export function LessonContent({
         </div>
       )}
 
-      {/* Botones de navegación principales - estilo Paidek */}
-      <div className="flex-shrink-0 border-t bg-background">
-        <div className="px-6 py-4 flex items-center justify-center gap-4 max-w-4xl mx-auto">
-          <Button
-            variant="outline"
-            disabled={!previousLesson}
-            onClick={onNavigatePrevious}
-            size="lg"
-            className="min-w-[140px]"
-          >
-            ← ANTERIOR
-          </Button>
-          
-          <Button
-            variant={isCompleted ? "outline" : "default"}
-            disabled={isMarking || isCompleted}
-            onClick={onMarkComplete}
-            size="lg"
-            className="min-w-[180px]"
-          >
-            {isCompleted ? (
-              <>
-                <CheckCircle2 className="mr-2 h-4 w-4" />
-                COMPLETADA
-              </>
-            ) : isMarking ? (
-              "GUARDANDO..."
-            ) : (
-              "COMPLETAR"
-            )}
-          </Button>
+      {/* Botones de navegación principales - mejorados para móvil */}
+      <div className="flex-shrink-0 border-t bg-background/95 backdrop-blur-sm sticky bottom-0 z-40">
+        <div className="px-3 sm:px-6 py-3 sm:py-4">
+          {/* Versión móvil - Botones apilados */}
+          <div className="flex md:hidden flex-col gap-2">
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                disabled={!previousLesson}
+                onClick={onNavigatePrevious}
+                size="sm"
+                className="flex-1"
+              >
+                ← ANTERIOR
+              </Button>
+              <Button
+                disabled={!nextLesson}
+                onClick={onNavigateNext}
+                size="sm"
+                className="flex-1"
+              >
+                SIGUIENTE →
+              </Button>
+            </div>
+            <Button
+              variant={isCompleted ? "outline" : "default"}
+              disabled={isMarking || isCompleted}
+              onClick={onMarkComplete}
+              size="sm"
+              className="w-full"
+            >
+              {isCompleted ? (
+                <>
+                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                  COMPLETADA
+                </>
+              ) : isMarking ? (
+                "GUARDANDO..."
+              ) : (
+                "COMPLETAR LECCIÓN"
+              )}
+            </Button>
+          </div>
 
-          <Button
-            disabled={!nextLesson}
-            onClick={onNavigateNext}
-            size="lg"
-            className="min-w-[140px]"
-          >
-            SIGUIENTE →
-          </Button>
+          {/* Versión desktop - Botones en línea */}
+          <div className="hidden md:flex items-center justify-center gap-4 max-w-4xl mx-auto">
+            <Button
+              variant="outline"
+              disabled={!previousLesson}
+              onClick={onNavigatePrevious}
+              size="lg"
+              className="min-w-[140px]"
+            >
+              ← ANTERIOR
+            </Button>
+            
+            <Button
+              variant={isCompleted ? "outline" : "default"}
+              disabled={isMarking || isCompleted}
+              onClick={onMarkComplete}
+              size="lg"
+              className="min-w-[180px]"
+            >
+              {isCompleted ? (
+                <>
+                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                  COMPLETADA
+                </>
+              ) : isMarking ? (
+                "GUARDANDO..."
+              ) : (
+                "COMPLETAR"
+              )}
+            </Button>
+
+            <Button
+              disabled={!nextLesson}
+              onClick={onNavigateNext}
+              size="lg"
+              className="min-w-[140px]"
+            >
+              SIGUIENTE →
+            </Button>
+          </div>
         </div>
       </div>
     </div>

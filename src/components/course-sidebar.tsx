@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { CheckCircle2, Circle, PlayCircle, FileText, PenTool, File, ChevronDown, ChevronUp, Menu, BookOpen } from "lucide-react"
+import { CheckCircle2, Circle, PlayCircle, FileText, PenTool, File, ChevronDown, ChevronUp, Menu, BookOpen, MessageCircle } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
@@ -27,6 +27,7 @@ interface CourseSidebarProps {
   courseId: string
   modules: Module[]
   progress: number
+  onOpenChat?: () => void
 }
 
 const lessonIcons = {
@@ -160,7 +161,7 @@ function SidebarContent({
   )
 }
 
-export function CourseSidebar({ courseId, modules, progress }: CourseSidebarProps) {
+export function CourseSidebar({ courseId, modules, progress, onOpenChat }: CourseSidebarProps) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -177,24 +178,31 @@ export function CourseSidebar({ courseId, modules, progress }: CourseSidebarProp
             <BookOpen className="h-5 w-5 text-primary" />
             <span className="font-semibold text-sm">Contenido del Curso</span>
           </div>
-          <Sheet open={open} onOpenChange={setOpen}>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Menu className="h-4 w-4 mr-2" />
-                Módulos
+          <div className="flex items-center gap-2">
+            {onOpenChat && (
+              <Button variant="outline" size="sm" onClick={onOpenChat}>
+                <MessageCircle className="h-4 w-4" />
               </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-80 p-0">
-              <div className="flex flex-col h-full">
-                <SidebarContent 
-                  courseId={courseId} 
-                  modules={modules} 
-                  progress={progress}
-                  onLessonClick={() => setOpen(false)}
-                />
-              </div>
-            </SheetContent>
-          </Sheet>
+            )}
+            <Sheet open={open} onOpenChange={setOpen}>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Menu className="h-4 w-4 mr-2" />
+                  Módulos
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-80 p-0">
+                <div className="flex flex-col h-full">
+                  <SidebarContent 
+                    courseId={courseId} 
+                    modules={modules} 
+                    progress={progress}
+                    onLessonClick={() => setOpen(false)}
+                  />
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
       </div>
     </>

@@ -1,8 +1,6 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
-import { CourseSidebar } from "@/components/course-sidebar"
-import { LessonPageClient } from "@/components/lesson-page-client"
-import { ChatbotWidget } from "@/components/chatbot-widget"
+import { LessonPageWrapper } from "@/components/lesson-page-wrapper"
 
 export default async function LessonPage({
   params,
@@ -110,26 +108,18 @@ export default async function LessonPage({
   }
 
   return (
-    <div className="flex flex-col md:flex-row h-screen overflow-hidden">
-      <CourseSidebar 
-        courseId={courseId} 
-        modules={modulesWithLessons || []} 
-        progress={progressPercentage} 
-      />
-      <main className="flex-1 flex flex-col h-screen overflow-hidden">
-        <LessonPageClient
-          courseId={courseId}
-          courseTitle={course?.title || ""}
-          lesson={lesson}
-          isLessonCompleted={isLessonCompleted}
-          isCourseCompleted={isCourseCompleted}
-          hasExistingReview={!!existingReview}
-          userId={user.id}
-          previousLesson={previousLesson}
-          nextLesson={nextLesson}
-        />
-      </main>
-      <ChatbotWidget courseId={courseId} courseName={course?.title || ""} />
-    </div>
+    <LessonPageWrapper
+      courseId={courseId}
+      courseTitle={course?.title || ""}
+      lesson={lesson}
+      isLessonCompleted={isLessonCompleted}
+      isCourseCompleted={isCourseCompleted}
+      hasExistingReview={!!existingReview}
+      userId={user.id}
+      previousLesson={previousLesson}
+      nextLesson={nextLesson}
+      modules={modulesWithLessons || []}
+      progressPercentage={progressPercentage}
+    />
   )
 }
