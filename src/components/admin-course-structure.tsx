@@ -31,7 +31,7 @@ import {
 import { 
   BookOpen, 
   ChevronDown, 
-  ChevronRight, 
+  ChevronRight,
   Plus, 
   Pencil, 
   Trash2,
@@ -294,6 +294,7 @@ const lessonTypeOptions = [
 export function AdminCourseStructure({ courses }: AdminCourseStructureProps) {
   const [openCourses, setOpenCourses] = useState<Set<string>>(new Set())
   const [openModules, setOpenModules] = useState<Set<string>>(new Set())
+  const [draggedLesson, setDraggedLesson] = useState<{ lessonId: string; moduleId: string; currentIndex: number } | null>(null)
   const { toast } = useToast()
   const router = useRouter()
   const supabase = createClient()
@@ -438,16 +439,67 @@ export function AdminCourseStructure({ courses }: AdminCourseStructureProps) {
                             ) : (
                               module.lessons
                                 .sort((a, b) => a.order_index - b.order_index)
-                                .map((lesson) => {
+                                .map((lesson, index, sortedLessons) => {
                                   const typeInfo = lessonTypeOptions.find(opt => opt.value === lesson.lesson_type)
                                   const TypeIcon = typeInfo?.icon || FileText
+                                  const isDragging = draggedLesson?.lessonId === lesson.id
+                                  const isDragOver = draggedLesson && draggedLesson.moduleId === module.id && draggedLesson.lessonId !== lesson.id
+                                  
+                                  const handleDragStart = (e: React.DragEvent) => {
+                                    e.dataTransfer.effectAllowed = 'move'
+                                    setDraggedLesson({ lessonId: lesson.id, moduleId: module.id, currentIndex: index })
+                                  }
+                                  
+                                  const handleDragEnd = () => {
+                                    setDraggedLesson(null)
+                                  }
+                                  
+                                  const handleDragOver = (e: React.DragEvent) => {
+                                    e.preventDefault()
+                                    e.dataTransfer.dropEffect = 'move'
+                                  }
+                                  
+                                  const handleDrop = async (e: React.DragEvent) => {
+                                    e.preventDefault()
+                                    if (!draggedLesson || draggedLesson.moduleId !== module.id || draggedLesson.lessonId === lesson.id) {
+                                      setDraggedLesson(null)
+                                      return
+                                    }
+                                    
+                                    const supabase = createClient()
+                                    const draggedLessonData = sortedLessons[draggedLesson.currentIndex]
+                                    const targetIndex = index
+                                    
+                                    try {
+                                      // Intercambiar order_index
+                                      await supabase.from("lessons").update({ order_index: lesson.order_index }).eq("id", draggedLessonData.id)
+                                      await supabase.from("lessons").update({ order_index: draggedLessonData.order_index }).eq("id", lesson.id)
+                                      
+                                      toast({ description: "Lección reordenada correctamente" })
+                                      router.refresh()
+                                    } catch (error) {
+                                      toast({ variant: "destructive", description: "Error al reordenar la lección" })
+                                    }
+                                    
+                                    setDraggedLesson(null)
+                                  }
+                                  
                                   return (
                                     <div
                                       key={lesson.id}
-                                      className="flex items-center justify-between p-2 rounded hover:bg-muted/50 group gap-2"
+                                      draggable
+                                      onDragStart={handleDragStart}
+                                      onDragEnd={handleDragEnd}
+                                      onDragOver={handleDragOver}
+                                      onDrop={handleDrop}
+                                      className={`flex items-center justify-between p-2 rounded hover:bg-muted/50 group gap-2 transition-all ${
+                                        isDragging ? 'opacity-50 scale-95' : ''
+                                      } ${
+                                        isDragOver ? 'border-2 border-dashed border-primary' : ''
+                                      }`}
                                     >
                                       <div className="flex items-center gap-1 sm:gap-2 flex-1 min-w-0">
-                                        <GripVertical className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block flex-shrink-0" />
+                                        <GripVertical className="h-3 w-3 text-muted-foreground group-hover:opacity-100 transition-opacity flex-shrink-0 cursor-grab active:cursor-grabbing opacity-40 sm:opacity-0" />
                                         <TypeIcon className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
                                         <span className="text-xs sm:text-sm truncate">{lesson.title}</span>
                                         <Badge variant="outline" className="text-xs flex-shrink-0 hidden sm:inline-flex">
@@ -1012,6 +1064,57 @@ function EditLessonDialog({ lesson, moduleId, onUpdated }: { lesson: Lesson, mod
   const { toast } = useToast()
   const supabase = createClient()
 
+  // Limpiar campos al cambiar el tipo de lección
+  const handleLessonTypeChange = async (newType: string) => {
+    // Primero actualizar el formulario
+    setFormData(prev => {
+      // Preservar solo título, orden y duración
+      const baseData = {
+        title: prev.title,
+        order_index: prev.order_index,
+        duration_minutes: prev.duration_minutes,
+        lesson_type: newType,
+      }
+
+      // Agregar campos específicos según el tipo, todos vacíos
+      return { ...baseData, video_url: "", content: "", content_title: "" }
+    })
+
+    // Luego limpiar los campos en la base de datos inmediatamente
+    try {
+      const updateData: any = {
+        lesson_type: newType,
+      }
+
+      // Limpiar campos según el tipo
+      if (newType === "video") {
+        // Solo mantener video_url, limpiar content
+        updateData.content = null
+        updateData.content_title = null
+      } else if (newType === "pdf") {
+        // Solo mantener video_url (para el PDF), limpiar content
+        updateData.content = null
+        updateData.content_title = null
+      } else if (newType === "reading") {
+        // Solo mantener content, limpiar video_url
+        updateData.video_url = null
+      } else if (newType === "exercise") {
+        // Mantener content, limpiar video_url
+        updateData.video_url = null
+      }
+
+      await supabase
+        .from("lessons")
+        .update(updateData)
+        .eq("id", lesson.id)
+
+      toast({ description: "Tipo de lección cambiado. Los campos incompatibles se han limpiado." })
+      onUpdated() // Refrescar la vista
+    } catch (error) {
+      console.error("Error al limpiar campos:", error)
+    }
+  }
+
   const handlePDFUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -1093,7 +1196,10 @@ function EditLessonDialog({ lesson, moduleId, onUpdated }: { lesson: Lesson, mod
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label className="mb-2 block">Tipo *</Label>
-                <Select value={formData.lesson_type} onValueChange={(v) => setFormData({ ...formData, lesson_type: v })}>
+                <Select 
+                  value={formData.lesson_type} 
+                  onValueChange={handleLessonTypeChange}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>

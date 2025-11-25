@@ -120,8 +120,8 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-64 bg-card border-r flex-col shadow-sm">
-        <div className="p-6 border-b bg-gradient-to-br from-primary/5 to-transparent">
+      <aside className="hidden md:flex w-64 bg-card border-r flex-col shadow-sm sticky top-0 h-screen">
+        <div className="p-6 border-b bg-gradient-to-br from-primary/5 to-transparent flex-shrink-0">
           <Link href="/admin" className="flex items-center gap-2 group">
             <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-md transition-transform group-hover:scale-105">
               <span className="text-primary-foreground font-bold text-lg">P</span>
