@@ -85,7 +85,16 @@ export function AdminEnrollmentsManager({
   )
 
   const handleEnrollmentCreated = (enrollment: EnrollmentWithDetails) => {
-    setEnrollments((prev) => [enrollment, ...prev])
+    // Verificar si ya existe (en caso de renovación)
+    const existingIndex = enrollments.findIndex((e) => e.id === enrollment.id)
+    
+    if (existingIndex !== -1) {
+      // Si existe, actualizar
+      setEnrollments((prev) => prev.map((e) => (e.id === enrollment.id ? enrollment : e)))
+    } else {
+      // Si no existe, agregar al inicio
+      setEnrollments((prev) => [enrollment, ...prev])
+    }
   }
 
   const handleEnrollmentUpdated = (enrollment: EnrollmentWithDetails) => {
@@ -337,6 +346,7 @@ function CreateEnrollmentDialog({
   const [isCreating, setIsCreating] = useState(false)
   const [selectedUser, setSelectedUser] = useState("")
   const [selectedCourse, setSelectedCourse] = useState("")
+  const [planType, setPlanType] = useState("4_months")
   const { toast } = useToast()
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -354,22 +364,27 @@ function CreateEnrollmentDialog({
     setIsCreating(true)
 
     const formData = new FormData(event.currentTarget)
-    const planType = formData.get("plan_type") as string
 
     // Calcular fecha de expiración
     let expiresAt = null
     if (planType && planType !== "none") {
       const now = new Date()
-      switch (planType) {
-        case "1_month":
-          now.setMonth(now.getMonth() + 1)
-          break
-        case "4_months":
-          now.setMonth(now.getMonth() + 4)
-          break
-        case "8_months":
-          now.setMonth(now.getMonth() + 8)
-          break
+      if (planType === "test_minutes") {
+        // Modo de prueba: agregar minutos en lugar de meses
+        const minutes = parseInt(formData.get("test_minutes") as string) || 1
+        now.setTime(now.getTime() + minutes * 60 * 1000)
+      } else {
+        switch (planType) {
+          case "1_month":
+            now.setMonth(now.getMonth() + 1)
+            break
+          case "4_months":
+            now.setMonth(now.getMonth() + 4)
+            break
+          case "8_months":
+            now.setMonth(now.getMonth() + 8)
+            break
+        }
       }
       expiresAt = now.toISOString()
     }
@@ -388,11 +403,14 @@ function CreateEnrollmentDialog({
       onCreated(enrollment)
       toast({
         title: "Inscripción creada",
-        description: "La inscripción se creó correctamente.",
+        description: planType === "test_minutes" 
+          ? `Inscripción de prueba creada (expira en ${formData.get("test_minutes")} minutos)` 
+          : "La inscripción se creó correctamente.",
       })
       setIsOpen(false)
       setSelectedUser("")
       setSelectedCourse("")
+      setPlanType("4_months")
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -452,18 +470,38 @@ function CreateEnrollmentDialog({
 
           <div className="space-y-2">
             <Label htmlFor="plan_type">Tipo de Plan</Label>
-            <Select name="plan_type" defaultValue="4_months">
+            <Select value={planType} onValueChange={setPlanType}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">Sin plan</SelectItem>
+                <SelectItem value="test_minutes">🧪 Prueba (minutos)</SelectItem>
                 <SelectItem value="1_month">1 Mes</SelectItem>
                 <SelectItem value="4_months">4 Meses</SelectItem>
                 <SelectItem value="8_months">8 Meses</SelectItem>
               </SelectContent>
             </Select>
           </div>
+
+          {planType === "test_minutes" && (
+            <div className="space-y-2">
+              <Label htmlFor="test_minutes">Duración (minutos) *</Label>
+              <Input
+                id="test_minutes"
+                name="test_minutes"
+                type="number"
+                min="1"
+                max="1440"
+                defaultValue="1"
+                required
+                placeholder="1"
+              />
+              <p className="text-xs text-muted-foreground">
+                La inscripción expirará en los minutos especificados
+              </p>
+            </div>
+          )}
 
           <div className="flex items-center space-x-2">
             <Switch id="is_active" name="is_active" defaultChecked />
