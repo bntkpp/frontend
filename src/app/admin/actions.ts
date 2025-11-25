@@ -278,28 +278,50 @@ export async function createEnrollment(data: {
 }) {
   const supabase = await createClient()
 
-  // Verificar que el usuario no esté ya inscrito en este curso
+  // Verificar si el usuario ya está inscrito en este curso
   const { data: existingEnrollment } = await supabase
     .from("enrollments")
-    .select("id")
+    .select("id, expires_at, is_active")
     .eq("user_id", data.user_id)
     .eq("course_id", data.course_id)
     .single()
 
+  let enrollment
+
   if (existingEnrollment) {
-    throw new Error("El usuario ya está inscrito en este curso")
-  }
+    // Si ya existe, renovar/extender la inscripción
+    const { data: updatedEnrollment, error } = await supabase
+      .from("enrollments")
+      .update({
+        is_active: data.is_active,
+        plan_type: data.plan_type,
+        expires_at: data.expires_at,
+        enrolled_at: data.enrolled_at, // Actualizar fecha de inscripción
+      })
+      .eq("id", existingEnrollment.id)
+      .select()
+      .single()
 
-  // Crear la inscripción
-  const { data: enrollment, error } = await supabase
-    .from("enrollments")
-    .insert(data)
-    .select()
-    .single()
+    if (error) {
+      console.error("Error updating enrollment:", error)
+      throw new Error(error.message)
+    }
 
-  if (error) {
-    console.error("Error creating enrollment:", error)
-    throw new Error(error.message)
+    enrollment = updatedEnrollment
+  } else {
+    // Crear nueva inscripción
+    const { data: newEnrollment, error } = await supabase
+      .from("enrollments")
+      .insert(data)
+      .select()
+      .single()
+
+    if (error) {
+      console.error("Error creating enrollment:", error)
+      throw new Error(error.message)
+    }
+
+    enrollment = newEnrollment
   }
 
   // Obtener los datos relacionados (usuario y curso)
