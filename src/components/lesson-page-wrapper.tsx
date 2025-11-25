@@ -23,15 +23,15 @@ export function LessonPageWrapper(props: LessonPageWrapperProps) {
   const [chatOpen, setChatOpen] = useState(false)
 
   return (
-    <div className="relative">
-      <div className="flex flex-col md:flex-row h-screen overflow-hidden">
+    <div className="relative h-screen overflow-hidden">
+      <div className="flex flex-col md:flex-row h-full">
         <CourseSidebar 
           courseId={props.courseId} 
           modules={props.modules} 
           progress={props.progressPercentage}
           onOpenChat={() => setChatOpen(true)}
         />
-        <main className="flex-1 flex flex-col h-screen overflow-hidden">
+        <main className="flex-1 flex flex-col overflow-hidden">
           <LessonPageClient
             courseId={props.courseId}
             courseTitle={props.courseTitle}

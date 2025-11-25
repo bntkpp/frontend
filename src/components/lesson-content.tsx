@@ -194,6 +194,157 @@ export function LessonContent({
   const capsules = useMemo(() => parseCapsules(lesson), [lesson])
 
   const hasCapsules = capsules.length > 0
+  
+  // Determinar el tipo de contenido principal basado en lesson_type
+  const isPdfLesson = lesson.lesson_type === 'pdf'
+  const isVideoLesson = lesson.lesson_type === 'video'
+  const isReadingLesson = lesson.lesson_type === 'reading'
+  
+  // Validar si una URL es un video válido
+  const isValidVideoUrl = (url: string | null) => {
+    if (!url) return false
+    const lowerUrl = url.toLowerCase()
+    return lowerUrl.includes('youtube.com') || 
+           lowerUrl.includes('youtu.be') || 
+           lowerUrl.includes('vimeo.com') || 
+           lowerUrl.includes('drive.google.com')
+  }
+  
+  // Función para renderizar solo el contenido apropiado según el tipo de lección
+  const renderMainContent = () => {
+    // Si es lección PDF, mostrar solo PDF
+    if (isPdfLesson) {
+      const pdfCapsule = capsules.find(c => c.type === "pdf")
+      if (pdfCapsule?.url) {
+        return (
+          <div className="flex-1 w-full overflow-hidden min-h-0">
+            <PDFViewerSimple url={pdfCapsule.url} />
+          </div>
+        )
+      }
+      // Fallback si no hay capsule pero hay video_url con PDF
+      if (lesson.video_url?.toLowerCase().endsWith('.pdf')) {
+        return (
+          <div className="flex-1 w-full overflow-hidden min-h-0">
+            <PDFViewerSimple url={lesson.video_url} />
+          </div>
+        )
+      }
+    }
+    
+    // Si es lección de video, mostrar solo video
+    if (isVideoLesson) {
+      const videoCapsule = capsules.find(c => c.type === "video")
+      const videoUrl = videoCapsule?.url || lesson.video_url
+      
+      // Validar que la URL sea correcta
+      if (videoUrl && !isValidVideoUrl(videoUrl)) {
+        return (
+          <div className="flex-1 flex items-center justify-center p-8">
+            <div className="text-center max-w-md">
+              <div className="mb-4 text-destructive">
+                <PlayCircle className="h-16 w-16 mx-auto mb-4" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">El enlace del video es incorrecto</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                El formato del enlace no es válido. Por favor, usa enlaces de YouTube, Vimeo o Google Drive.
+              </p>
+              <p className="text-xs text-muted-foreground font-mono bg-muted p-2 rounded break-all">
+                {videoUrl}
+              </p>
+            </div>
+          </div>
+        )
+      }
+      
+      if (videoCapsule?.url) {
+        return (
+          <div className="flex-1 w-full overflow-y-auto min-h-0">
+            <div className="min-h-full bg-black flex items-center justify-center p-4 md:p-8">
+              <div className="w-full max-w-5xl">
+                <div className="w-full bg-black rounded-lg overflow-hidden">
+                  <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                    <iframe
+                      src={videoCapsule.url}
+                      className="absolute top-0 left-0 w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      }
+      // Fallback si no hay capsule pero hay video_url
+      if (videoUrl && isValidVideoUrl(videoUrl)) {
+        return (
+          <div className="flex-1 w-full overflow-y-auto min-h-0">
+            <div className="min-h-full bg-black flex items-center justify-center p-4 md:p-8">
+              <div className="w-full max-w-5xl">
+                <div className="w-full bg-black rounded-lg overflow-hidden">
+                  <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                    <iframe
+                      src={videoUrl}
+                      className="absolute top-0 left-0 w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      }
+      
+      // Si no hay URL válida
+      return (
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="text-center text-muted-foreground">
+            <PlayCircle className="h-16 w-16 mx-auto mb-4" />
+            <p>No hay video disponible para esta lección</p>
+          </div>
+        </div>
+      )
+    }
+    
+    // Si es lección de lectura, mostrar solo contenido de texto
+    if (isReadingLesson || lesson.content) {
+      const textCapsule = capsules.find(c => c.type === "text")
+      if (textCapsule?.content || lesson.content) {
+        return (
+          <div className="flex-1 w-full overflow-y-auto min-h-0">
+            <div className="max-w-4xl mx-auto px-4 md:px-8 py-6 md:py-8">
+              {(textCapsule?.title || lesson.content_title) && (
+                <h2 className="text-2xl md:text-3xl font-bold mb-6">
+                  {textCapsule?.title || lesson.content_title}
+                </h2>
+              )}
+              <div className="prose prose-base max-w-none dark:prose-invert prose-headings:font-bold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-p:text-base prose-p:leading-relaxed prose-ul:list-disc prose-ol:list-decimal prose-li:ml-4 prose-a:text-primary prose-a:underline prose-strong:font-bold">
+                <div 
+                  className="leading-relaxed whitespace-pre-wrap"
+                  dangerouslySetInnerHTML={{ 
+                    __html: formatRichText(textCapsule?.content || lesson.content || '') 
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        )
+      }
+    }
+    
+    // Fallback: mostrar mensaje de que no hay contenido
+    return (
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="text-center text-muted-foreground">
+          <p>No hay contenido disponible para esta lección</p>
+        </div>
+      </div>
+    )
+  }
 
   const renderCapsule = (capsule: LessonCapsule) => {
     switch (capsule.type) {
@@ -256,93 +407,8 @@ export function LessonContent({
 
   return (
     <div className="flex flex-col h-full overflow-hidden bg-background">
-      {/* Contenido principal - PDF ocupando todo el espacio */}
-      {hasCapsules && capsules.some(c => c.type === "pdf") && (
-        <div className="flex-1 w-full overflow-hidden min-h-0">
-          {capsules
-            .filter(c => c.type === "pdf")
-            .map((capsule) => (
-              <div key={capsule.id || `${lesson.id}-${capsule.type}`} className="w-full h-full">
-                {capsule.url && <PDFViewerSimple url={capsule.url} />}
-              </div>
-            ))}
-        </div>
-      )}
-
-      {/* Si tiene video - centrado con fondo negro */}
-      {hasCapsules && !capsules.some(c => c.type === "pdf") && capsules.some(c => c.type === "video") && (
-        <div className="flex-1 w-full overflow-y-auto min-h-0">
-          <div className="min-h-full bg-black flex items-center justify-center p-4 md:p-8">
-            {capsules
-              .filter(c => c.type === "video")
-              .map((capsule) => (
-                <div key={capsule.id || `${lesson.id}-video`} className="w-full max-w-5xl">
-                  {renderCapsule(capsule)}
-                </div>
-              ))}
-          </div>
-        </div>
-      )}
-
-      {/* Si tiene texto - área scrolleable con padding */}
-      {hasCapsules && !capsules.some(c => c.type === "pdf") && !capsules.some(c => c.type === "video") && capsules.some(c => c.type === "text") && (
-        <div className="flex-1 w-full overflow-y-auto min-h-0">
-          <div className="max-w-4xl mx-auto px-4 md:px-8 py-6 md:py-8">
-            {capsules
-              .filter(c => c.type === "text")
-              .map((capsule) => (
-                <div key={capsule.id || `${lesson.id}-text`}>
-                  {capsule.title && (
-                    <h2 className="text-2xl md:text-3xl font-bold mb-6">{capsule.title}</h2>
-                  )}
-                  {renderCapsule(capsule)}
-                </div>
-              ))}
-          </div>
-        </div>
-      )}
-
-      {/* Fallback para video_url directo */}
-      {!hasCapsules && lesson.video_url && lesson.video_url.toLowerCase().endsWith('.pdf') && (
-        <div className="flex-1 w-full overflow-hidden min-h-0">
-          <PDFViewerSimple url={lesson.video_url} />
-        </div>
-      )}
-
-      {!hasCapsules && lesson.video_url && (lesson.video_url.includes('youtube') || lesson.video_url.includes('vimeo')) && (
-        <div className="flex-1 w-full overflow-y-auto min-h-0">
-          <div className="min-h-full bg-black flex items-center justify-center p-4 md:p-8">
-            <div className="w-full max-w-5xl">
-              <div className="w-full bg-black rounded-lg overflow-hidden">
-                <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-                  <iframe
-                    src={lesson.video_url}
-                    className="absolute top-0 left-0 w-full h-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Si tiene contenido de texto en lesson.content */}
-      {!hasCapsules && lesson.content && (
-        <div className="flex-1 w-full overflow-y-auto min-h-0">
-          <div className="max-w-4xl mx-auto px-4 md:px-8 py-6 md:py-8">
-            <div className="prose prose-base max-w-none dark:prose-invert prose-headings:font-bold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-p:text-base prose-p:leading-relaxed prose-ul:list-disc prose-ol:list-decimal prose-li:ml-4 prose-a:text-primary prose-a:underline prose-strong:font-bold">
-              <div 
-                className="leading-relaxed"
-                dangerouslySetInnerHTML={{ 
-                  __html: formatRichText(lesson.content) 
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Contenido principal */}
+      {renderMainContent()}
 
       {/* Botones de navegación principales - mejorados para móvil */}
       <div className="flex-shrink-0 border-t bg-background/95 backdrop-blur-sm sticky bottom-0 z-40">
