@@ -18,29 +18,62 @@ interface Course {
   image_url: string | null
   payment_type: string | null
   one_time_price: number | null
-  price_1_month: number | null
-  price_4_months: number | null
-  price_8_months: number | null
   duration_hours: number | null
   level: string | null
   published: boolean
 }
 
+interface SubscriptionPlan {
+  id: string
+  duration_months: number
+  price: number
+  name: string | null
+  is_popular: boolean
+}
+
 export function CoursePreview() {
   const [courses, setCourses] = useState<Course[]>([])
+  const [coursePlans, setCoursePlans] = useState<Record<string, SubscriptionPlan[]>>({})
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     async function fetchCourses() {
       const supabase = createClient()
-      const { data } = await supabase
+      
+      // Obtener cursos publicados
+      const { data: coursesData } = await supabase
         .from("courses")
         .select("*")
         .eq("published", true)
         .order("created_at", { ascending: false })
         .limit(3)
 
-      setCourses(data || [])
+      if (coursesData && coursesData.length > 0) {
+        setCourses(coursesData)
+        
+        // Obtener planes de suscripción para cada curso
+        const courseIds = coursesData.map(c => c.id)
+        const { data: plansData } = await supabase
+          .from("subscription_plans")
+          .select("*")
+          .in("course_id", courseIds)
+          .eq("is_active", true)
+          .order("price", { ascending: true })
+        
+        // Agrupar planes por curso
+        const plansByCourse: Record<string, SubscriptionPlan[]> = {}
+        plansData?.forEach((plan) => {
+          if (!plansByCourse[plan.course_id]) {
+            plansByCourse[plan.course_id] = []
+          }
+          plansByCourse[plan.course_id].push(plan)
+        })
+        
+        setCoursePlans(plansByCourse)
+      } else {
+        setCourses([])
+      }
+
       setIsLoading(false)
     }
 
@@ -109,10 +142,19 @@ export function CoursePreview() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {courses.map((course, index) => {
-            const isOneTimePayment = course.payment_type === "one_time" || !!course.one_time_price
-            const savings4Months = calculateSavings(course.price_1_month, course.price_4_months, 4)
-            const savings8Months = calculateSavings(course.price_1_month, course.price_8_months, 8)
-            const bestSavings = Math.max(savings4Months, savings8Months)
+            const isOneTimePayment = course.payment_type === "one_time"
+            const plans = coursePlans[course.id] || []
+            const cheapestPlan = plans[0] // Ya están ordenados por precio
+            const mostExpensivePlan = plans[plans.length - 1]
+            
+            // Calcular ahorro si hay múltiples planes
+            let bestSavings = 0
+            if (plans.length > 1 && cheapestPlan && mostExpensivePlan) {
+              const pricePerMonth = cheapestPlan.price / cheapestPlan.duration_months
+              const regularTotal = pricePerMonth * mostExpensivePlan.duration_months
+              const savings = regularTotal - mostExpensivePlan.price
+              bestSavings = Math.round((savings / regularTotal) * 100)
+            }
 
             return (
               <motion.div
@@ -180,23 +222,30 @@ export function CoursePreview() {
                           </p>
                           <p className="text-sm text-muted-foreground text-center mt-1">Pago único</p>
                         </div>
-                      ) : (
+                      ) : cheapestPlan ? (
                         <div className="flex items-baseline justify-between mb-2">
                           <div>
                             <span className="text-sm text-muted-foreground">Desde</span>
                             <p className="text-2xl font-bold text-primary">
-                              ${course.price_1_month?.toLocaleString("es-CL")}
+                              ${cheapestPlan.price.toLocaleString("es-CL")}
                               <span className="text-sm font-normal text-muted-foreground">/mes</span>
                             </p>
+                            <p className="text-xs text-muted-foreground">Renovación mensual</p>
                           </div>
-                          {course.price_4_months && (
+                          {mostExpensivePlan && mostExpensivePlan.id !== cheapestPlan.id && (
                             <div className="text-right">
-                              <p className="text-sm text-muted-foreground">Plan 4 meses</p>
+                              <p className="text-sm text-muted-foreground">
+                                {mostExpensivePlan.name || `Plan ${mostExpensivePlan.duration_months} meses`}
+                              </p>
                               <p className="text-lg font-semibold">
-                                ${(course.price_4_months).toLocaleString("es-CL")}
+                                ${mostExpensivePlan.price.toLocaleString("es-CL")}
                               </p>
                             </div>
                           )}
+                        </div>
+                      ) : (
+                        <div className="mb-2 text-center">
+                          <p className="text-sm text-muted-foreground">Consultar precio</p>
                         </div>
                       )}
                     </div>

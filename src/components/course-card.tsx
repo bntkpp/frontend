@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge"
 import { Clock, BookOpen, TrendingUp } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { motion } from "framer-motion"
+import { useEffect, useState } from "react"
+import { createClient } from "@/lib/supabase/client"
 
 interface CourseCardProps {
   id: string
@@ -16,11 +18,16 @@ interface CourseCardProps {
   image_url: string | null
   payment_type: string | null
   one_time_price: number | null
-  price_1_month: number | null
-  price_4_months: number | null
-  price_8_months: number | null
   duration_hours: number | null
   level: string | null
+}
+
+interface SubscriptionPlan {
+  id: string
+  duration_months: number
+  price: number
+  name: string | null
+  is_popular: boolean
 }
 
 const levelLabels: Record<string, string> = {
@@ -36,29 +43,54 @@ export function CourseCard({
   image_url,
   payment_type,
   one_time_price,
-  price_1_month,
-  price_4_months,
-  price_8_months,
   duration_hours,
   level,
 }: CourseCardProps) {
-  // Detectar si es pago único
-  const isOneTimePayment = payment_type === "one_time" || !!one_time_price
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([])
+  const [isLoadingPlans, setIsLoadingPlans] = useState(true)
   
-  // Valores por defecto para precios nulos
-  const monthlyPrice = price_1_month ?? 0
-  const fourMonthsPrice = price_4_months ?? 0
-  const eightMonthsPrice = price_8_months ?? 0
+  // Detectar si es pago único
+  const isOneTimePayment = payment_type === "one_time"
 
-  const calculateSavings = (monthlyPrice: number, totalPrice: number, months: number) => {
-    const regularTotal = monthlyPrice * months
+  useEffect(() => {
+    if (payment_type === "subscription") {
+      loadPlans()
+    } else {
+      setIsLoadingPlans(false)
+    }
+  }, [id, payment_type])
+
+  const loadPlans = async () => {
+    try {
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from("subscription_plans")
+        .select("*")
+        .eq("course_id", id)
+        .eq("is_active", true)
+        .order("display_order", { ascending: true })
+
+      if (!error && data) {
+        setPlans(data)
+      }
+    } catch (error) {
+      console.error("Error loading plans:", error)
+    } finally {
+      setIsLoadingPlans(false)
+    }
+  }
+
+  const calculateSavings = (cheapestMonthlyRate: number, totalPrice: number, months: number) => {
+    const regularTotal = cheapestMonthlyRate * months
     const savings = regularTotal - totalPrice
     const savingsPercent = Math.round((savings / regularTotal) * 100)
     return { savings, savingsPercent }
   }
 
-  const savings4Months = calculateSavings(monthlyPrice, fourMonthsPrice, 4)
-  const savings8Months = calculateSavings(monthlyPrice, eightMonthsPrice, 8)
+  // Calcular la tarifa mensual más baja
+  const cheapestMonthlyRate = plans.length > 0 
+    ? Math.min(...plans.map(p => p.price / p.duration_months))
+    : 0
 
   return (
     <motion.div
@@ -119,80 +151,61 @@ export function CourseCard({
               Pago único
             </p>
           </div>
+        ) : isLoadingPlans ? (
+          <div className="text-center py-4 text-sm text-muted-foreground">
+            Cargando planes...
+          </div>
+        ) : plans.length === 0 ? (
+          <div className="text-center py-4 text-sm text-muted-foreground">
+            Consultar precio
+          </div>
         ) : (
-          // Mostrar tabs con múltiples opciones de suscripción
-          <Tabs defaultValue="1_month" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="1_month" className="text-xs" disabled={!price_1_month}>1 Mes</TabsTrigger>
-              <TabsTrigger value="4_months" className="text-xs" disabled={!price_4_months}>4 Meses</TabsTrigger>
-              <TabsTrigger value="8_months" className="text-xs" disabled={!price_8_months}>8 Meses</TabsTrigger>
+          // Mostrar tabs con planes dinámicos
+          <Tabs defaultValue={plans[0]?.id || "plan-1"} className="w-full">
+            <TabsList className={`grid w-full ${plans.length === 1 ? 'grid-cols-1' : plans.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+              {plans.map((plan) => (
+                <TabsTrigger key={plan.id} value={plan.id} className="text-xs">
+                  {plan.duration_months} {plan.duration_months === 1 ? 'Mes' : 'Meses'}
+                </TabsTrigger>
+              ))}
             </TabsList>
             
-            {price_1_month && (
-              <TabsContent value="1_month" className="space-y-2 mt-4">
-                <div className="flex items-baseline justify-center gap-1">
-                  <span className="text-3xl font-bold">
-                    ${monthlyPrice.toLocaleString("es-CL")}
-                  </span>
-                  <span className="text-muted-foreground">/mes</span>
-                </div>
-                <p className="text-center text-sm text-muted-foreground">
-                  Renovación mensual
-                </p>
-              </TabsContent>
-            )}
-            
-            {price_4_months && (
-              <TabsContent value="4_months" className="space-y-2 mt-4">
-                <div className="flex flex-col items-center">
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-bold">
-                      ${fourMonthsPrice.toLocaleString("es-CL")}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-sm text-muted-foreground">
-                      ${(fourMonthsPrice / 4).toLocaleString("es-CL")}/mes
-                    </span>
-                    {savings4Months.savingsPercent > 0 && (
-                      <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                        <TrendingUp className="h-3 w-3 mr-1" />
-                        Ahorra {savings4Months.savingsPercent}%
-                      </Badge>
+            {plans.map((plan) => {
+              const monthlyRate = plan.price / plan.duration_months
+              const savings = plan.duration_months > 1 
+                ? calculateSavings(cheapestMonthlyRate, plan.price, plan.duration_months)
+                : { savings: 0, savingsPercent: 0 }
+
+              return (
+                <TabsContent key={plan.id} value={plan.id} className="space-y-2 mt-4">
+                  <div className="flex flex-col items-center">
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-3xl font-bold">
+                        ${plan.price.toLocaleString("es-CL")}
+                      </span>
+                    </div>
+                    {plan.duration_months > 1 && (
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-sm text-muted-foreground">
+                          ${Math.round(monthlyRate).toLocaleString("es-CL")}/mes
+                        </span>
+                        {savings.savingsPercent > 0 && (
+                          <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                            <TrendingUp className="h-3 w-3 mr-1" />
+                            -{savings.savingsPercent}%
+                          </Badge>
+                        )}
+                      </div>
                     )}
                   </div>
-                </div>
-                <p className="text-center text-sm text-muted-foreground">
-                  Pago único por 4 meses
-                </p>
-              </TabsContent>
-            )}
-            
-            {price_8_months && (
-              <TabsContent value="8_months" className="space-y-2 mt-4">
-                <div className="flex flex-col items-center">
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-bold">
-                      ${eightMonthsPrice.toLocaleString("es-CL")}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-sm text-muted-foreground">
-                      ${(eightMonthsPrice / 8).toLocaleString("es-CL")}/mes
-                    </span>
-                    {savings8Months.savingsPercent > 0 && (
-                      <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                        <TrendingUp className="h-3 w-3 mr-1" />
-                        Ahorra {savings8Months.savingsPercent}%
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-                <p className="text-center text-sm text-muted-foreground">
-                  Pago único por 8 meses
-                </p>
-              </TabsContent>
-            )}
+                  <p className="text-center text-sm text-muted-foreground">
+                    {plan.name || (plan.duration_months === 1 
+                      ? "Renovación mensual" 
+                      : `Pago único por ${plan.duration_months} meses`)}
+                  </p>
+                </TabsContent>
+              )
+            })}
           </Tabs>
         )}
       </CardContent>
