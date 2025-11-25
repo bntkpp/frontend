@@ -40,7 +40,9 @@ export default async function AdminStructurePage() {
           lesson_type,
           order_index,
           duration_minutes,
-          content
+          content,
+          content_title,
+          video_url
         )
       )
     `)
