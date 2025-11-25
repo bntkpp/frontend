@@ -39,11 +39,217 @@ import {
   FileText,
   File,
   Dumbbell,
-  GripVertical
+  GripVertical,
+  Bold,
+  Italic,
+  Strikethrough,
+  List,
+  ListOrdered,
+  Link2,
+  Heading1,
+  Heading2,
+  Heading3
 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
+import { useRef } from "react"
+
+// Componente de editor de texto enriquecido
+function RichTextEditor({ value, onChange }: { value: string, onChange: (value: string) => void }) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  const insertFormat = (before: string, after: string = before, placeholder: string = "texto") => {
+    const textarea = textareaRef.current
+    if (!textarea) return
+
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    const selectedText = value.substring(start, end) || placeholder
+    const newText = value.substring(0, start) + before + selectedText + after + value.substring(end)
+    
+    onChange(newText)
+    
+    // Restaurar el foco y la selección
+    setTimeout(() => {
+      textarea.focus()
+      const newStart = start + before.length
+      const newEnd = newStart + selectedText.length
+      textarea.setSelectionRange(newStart, newEnd)
+    }, 0)
+  }
+
+  const insertHeading = (level: number) => {
+    const textarea = textareaRef.current
+    if (!textarea) return
+
+    const start = textarea.selectionStart
+    const lineStart = value.lastIndexOf('\n', start - 1) + 1
+    const prefix = '#'.repeat(level) + ' '
+    const newText = value.substring(0, lineStart) + prefix + value.substring(lineStart)
+    
+    onChange(newText)
+    
+    setTimeout(() => {
+      textarea.focus()
+      textarea.setSelectionRange(start + prefix.length, start + prefix.length)
+    }, 0)
+  }
+
+  const insertList = (type: 'ul' | 'ol') => {
+    const textarea = textareaRef.current
+    if (!textarea) return
+
+    const start = textarea.selectionStart
+    const lineStart = value.lastIndexOf('\n', start - 1) + 1
+    const prefix = type === 'ol' ? '1. ' : '- '
+    const newText = value.substring(0, lineStart) + prefix + value.substring(lineStart)
+    
+    onChange(newText)
+    
+    setTimeout(() => {
+      textarea.focus()
+      textarea.setSelectionRange(start + prefix.length, start + prefix.length)
+    }, 0)
+  }
+
+  return (
+    <div className="space-y-3 border rounded-lg overflow-hidden">
+      {/* Barra de herramientas mejorada */}
+      <div className="bg-muted/30 border-b">
+        <div className="flex flex-wrap items-center gap-0.5 p-2">
+          {/* Grupo: Formato de texto */}
+          <div className="flex items-center gap-0.5">
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => insertFormat('**', '**', 'negrita')}
+              title="Negrita (Ctrl+B)"
+              className="h-8 w-8 p-0 hover:bg-primary/10 hover:text-primary"
+            >
+              <Bold className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => insertFormat('*', '*', 'cursiva')}
+              title="Cursiva (Ctrl+I)"
+              className="h-8 w-8 p-0 hover:bg-primary/10 hover:text-primary"
+            >
+              <Italic className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => insertFormat('~~', '~~', 'tachado')}
+              title="Tachado"
+              className="h-8 w-8 p-0 hover:bg-primary/10 hover:text-primary"
+            >
+              <Strikethrough className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          <div className="w-px h-6 bg-border mx-1" />
+          
+          {/* Grupo: Títulos */}
+          <div className="flex items-center gap-0.5">
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => insertHeading(1)}
+              title="Título Grande"
+              className="h-8 px-2 text-xs font-semibold hover:bg-primary/10 hover:text-primary"
+            >
+              H1
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => insertHeading(2)}
+              title="Título Mediano"
+              className="h-8 px-2 text-xs font-semibold hover:bg-primary/10 hover:text-primary"
+            >
+              H2
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => insertHeading(3)}
+              title="Título Pequeño"
+              className="h-8 px-2 text-xs font-semibold hover:bg-primary/10 hover:text-primary"
+            >
+              H3
+            </Button>
+          </div>
+          
+          <div className="w-px h-6 bg-border mx-1" />
+          
+          {/* Grupo: Listas */}
+          <div className="flex items-center gap-0.5">
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => insertList('ul')}
+              title="Lista con viñetas"
+              className="h-8 w-8 p-0 hover:bg-primary/10 hover:text-primary"
+            >
+              <List className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => insertList('ol')}
+              title="Lista numerada"
+              className="h-8 w-8 p-0 hover:bg-primary/10 hover:text-primary"
+            >
+              <ListOrdered className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          <div className="w-px h-6 bg-border mx-1" />
+          
+          {/* Grupo: Enlaces */}
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={() => insertFormat('[', '](url)', 'texto del enlace')}
+            title="Insertar enlace"
+            className="h-8 w-8 p-0 hover:bg-primary/10 hover:text-primary"
+          >
+            <Link2 className="h-4 w-4" />
+          </Button>
+        </div>
+        
+        {/* Ayuda rápida */}
+        <div className="px-3 pb-2 text-xs text-muted-foreground">
+          💡 Selecciona texto y haz clic en los botones para dar formato, o escribe directamente usando la sintaxis
+        </div>
+      </div>
+      
+      {/* Área de texto */}
+      <div className="p-3 pt-0">
+        <Textarea
+          ref={textareaRef}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Escribe aquí el contenido de tu lección...&#10;&#10;Ejemplos de formato:&#10;**Este texto estará en negrita**&#10;*Este texto estará en cursiva*&#10;# Este será un título grande&#10;- Elemento de lista&#10;1. Lista numerada&#10;&#10;Las URLs como https://ejemplo.com se convierten automáticamente en enlaces"
+          rows={14}
+          className="resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 p-0"
+          required
+        />
+      </div>
+    </div>
+  )
+}
 
 interface Course {
   id: string
@@ -57,6 +263,8 @@ interface Lesson {
   order_index: number
   duration_minutes: number | null
   content: string | null
+  content_title: string | null
+  video_url: string | null
 }
 
 interface Module {
@@ -143,9 +351,12 @@ export function AdminCourseStructure({ courses }: AdminCourseStructureProps) {
             <div key={course.id} className="border rounded-lg">
               {/* Curso */}
               <div className="bg-muted/30">
-                <button
+                <div
                   onClick={() => toggleCourse(course.id)}
-                  className="w-full flex items-center justify-between p-3 sm:p-4 hover:bg-muted/50 transition-colors"
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === 'Enter' && toggleCourse(course.id)}
+                  className="w-full flex items-center justify-between p-3 sm:p-4 hover:bg-muted/50 transition-colors cursor-pointer"
                 >
                   <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                     {openCourses.has(course.id) ? (
@@ -165,7 +376,7 @@ export function AdminCourseStructure({ courses }: AdminCourseStructureProps) {
                   <div onClick={(e) => e.stopPropagation()} className="flex-shrink-0">
                     <CreateModuleDialog courseId={course.id} courseTitle={course.title} onCreated={() => router.refresh()} />
                   </div>
-                </button>
+                </div>
               </div>
 
               {/* Módulos del Curso */}
@@ -180,9 +391,12 @@ export function AdminCourseStructure({ courses }: AdminCourseStructureProps) {
                       <div key={module.id} className="border rounded-md bg-background">
                         {/* Módulo */}
                         <div className="bg-muted/20">
-                          <button
+                          <div
                             onClick={() => toggleModule(module.id)}
-                            className="w-full flex items-center justify-between p-2 sm:p-3 hover:bg-muted/30 transition-colors"
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => e.key === 'Enter' && toggleModule(module.id)}
+                            className="w-full flex items-center justify-between p-2 sm:p-3 hover:bg-muted/30 transition-colors cursor-pointer"
                           >
                             <div className="flex items-center gap-1 sm:gap-2 flex-1 min-w-0">
                               {openModules.has(module.id) ? (
@@ -211,7 +425,7 @@ export function AdminCourseStructure({ courses }: AdminCourseStructureProps) {
                               <EditModuleDialog module={module} onUpdated={() => router.refresh()} />
                               <DeleteModuleDialog module={module} onDeleted={() => router.refresh()} />
                             </div>
-                          </button>
+                          </div>
                         </div>
 
                         {/* Lecciones del Módulo */}
@@ -338,7 +552,7 @@ function CreateModuleDialog({ courseId, courseTitle, onCreated }: { courseId: st
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <Label>Título *</Label>
+              <Label className="mb-2 block">Título *</Label>
               <Input
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
@@ -346,7 +560,7 @@ function CreateModuleDialog({ courseId, courseTitle, onCreated }: { courseId: st
               />
             </div>
             <div>
-              <Label>Descripción</Label>
+              <Label className="mb-2 block">Descripción</Label>
               <Textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -354,7 +568,7 @@ function CreateModuleDialog({ courseId, courseTitle, onCreated }: { courseId: st
               />
             </div>
             <div>
-              <Label>Orden</Label>
+              <Label className="mb-2 block">Orden</Label>
               <Input
                 type="number"
                 value={nextOrderIndex}
@@ -431,7 +645,7 @@ function EditModuleDialog({ module, onUpdated }: { module: Module, onUpdated: ()
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <Label>Título *</Label>
+              <Label className="mb-2 block">Título *</Label>
               <Input
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
@@ -439,7 +653,7 @@ function EditModuleDialog({ module, onUpdated }: { module: Module, onUpdated: ()
               />
             </div>
             <div>
-              <Label>Descripción</Label>
+              <Label className="mb-2 block">Descripción</Label>
               <Textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -447,7 +661,7 @@ function EditModuleDialog({ module, onUpdated }: { module: Module, onUpdated: ()
               />
             </div>
             <div>
-              <Label>Orden</Label>
+              <Label className="mb-2 block">Orden</Label>
               <Input
                 type="number"
                 value={formData.order_index}
@@ -637,7 +851,7 @@ function CreateLessonDialog({ moduleId, moduleTitle, onCreated }: { moduleId: st
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <Label>Título *</Label>
+              <Label className="mb-2 block">Título *</Label>
               <Input
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
@@ -646,7 +860,7 @@ function CreateLessonDialog({ moduleId, moduleTitle, onCreated }: { moduleId: st
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Tipo *</Label>
+                <Label className="mb-2 block">Tipo *</Label>
                 <Select value={formData.lesson_type} onValueChange={(v) => setFormData({ ...formData, lesson_type: v })}>
                   <SelectTrigger>
                     <SelectValue />
@@ -659,7 +873,7 @@ function CreateLessonDialog({ moduleId, moduleTitle, onCreated }: { moduleId: st
                 </Select>
               </div>
               <div>
-                <Label>Orden</Label>
+                <Label className="mb-2 block">Orden</Label>
                 <Input
                   type="number"
                   value={nextOrderIndex}
@@ -672,7 +886,7 @@ function CreateLessonDialog({ moduleId, moduleTitle, onCreated }: { moduleId: st
               </div>
             </div>
             <div>
-              <Label>Duración (minutos)</Label>
+              <Label className="mb-2 block">Duración (minutos)</Label>
               <Input
                 type="number"
                 value={formData.duration_minutes || ""}
@@ -684,7 +898,7 @@ function CreateLessonDialog({ moduleId, moduleTitle, onCreated }: { moduleId: st
             {/* Campos específicos según el tipo */}
             {formData.lesson_type === "video" && (
               <div>
-                <Label>URL del Video *</Label>
+                <Label className="mb-2 block">URL del Video *</Label>
                 <Input
                   value={formData.video_url}
                   onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
@@ -700,7 +914,7 @@ function CreateLessonDialog({ moduleId, moduleTitle, onCreated }: { moduleId: st
             {formData.lesson_type === "pdf" && (
               <div className="space-y-3">
                 <div>
-                  <Label>Subir PDF</Label>
+                  <Label className="mb-2 block">Subir PDF</Label>
                   <Input
                     type="file"
                     accept=".pdf"
@@ -720,7 +934,7 @@ function CreateLessonDialog({ moduleId, moduleTitle, onCreated }: { moduleId: st
                   </div>
                 </div>
                 <div>
-                  <Label>URL del PDF</Label>
+                  <Label className="mb-2 block">URL del PDF</Label>
                   <Input
                     value={formData.video_url}
                     onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
@@ -736,7 +950,7 @@ function CreateLessonDialog({ moduleId, moduleTitle, onCreated }: { moduleId: st
             {formData.lesson_type === "reading" && (
               <div className="space-y-3">
                 <div>
-                  <Label>Título del Contenido (opcional)</Label>
+                  <Label className="mb-2 block">Título del Contenido (opcional)</Label>
                   <Input
                     value={formData.content_title}
                     onChange={(e) => setFormData({ ...formData, content_title: e.target.value })}
@@ -747,13 +961,10 @@ function CreateLessonDialog({ moduleId, moduleTitle, onCreated }: { moduleId: st
                   </p>
                 </div>
                 <div>
-                  <Label>Contenido *</Label>
-                  <Textarea
+                  <Label className="mb-2 block">Contenido *</Label>
+                  <RichTextEditor
                     value={formData.content}
-                    onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                    placeholder="Escribe el contenido de la lección aquí..."
-                    rows={10}
-                    required
+                    onChange={(value) => setFormData({ ...formData, content: value })}
                   />
                 </div>
               </div>
@@ -761,7 +972,7 @@ function CreateLessonDialog({ moduleId, moduleTitle, onCreated }: { moduleId: st
 
             {formData.lesson_type === "exercise" && (
               <div>
-                <Label>Instrucciones del Ejercicio</Label>
+                <Label className="mb-2 block">Instrucciones del Ejercicio</Label>
                 <Textarea
                   value={formData.content}
                   onChange={(e) => setFormData({ ...formData, content: e.target.value })}
@@ -788,13 +999,44 @@ function CreateLessonDialog({ moduleId, moduleTitle, onCreated }: { moduleId: st
 function EditLessonDialog({ lesson, moduleId, onUpdated }: { lesson: Lesson, moduleId: string, onUpdated: () => void }) {
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [isUploadingPDF, setIsUploadingPDF] = useState(false)
   const [formData, setFormData] = useState({ 
     title: lesson.title, 
     order_index: lesson.order_index,
     duration_minutes: lesson.duration_minutes,
+    lesson_type: lesson.lesson_type || "reading",
+    video_url: lesson.video_url || "",
+    content: lesson.content || "",
+    content_title: lesson.content_title || "",
   })
   const { toast } = useToast()
   const supabase = createClient()
+
+  const handlePDFUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsUploadingPDF(true)
+    try {
+      const fileName = `${Date.now()}-${file.name}`
+      const { data, error } = await supabase.storage
+        .from("course-assets")
+        .upload(fileName, file)
+
+      if (error) throw error
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("course-assets")
+        .getPublicUrl(fileName)
+
+      setFormData({ ...formData, video_url: publicUrl })
+      toast({ description: "PDF subido exitosamente" })
+    } catch (error) {
+      toast({ variant: "destructive", description: "Error al subir el PDF" })
+    } finally {
+      setIsUploadingPDF(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -807,6 +1049,10 @@ function EditLessonDialog({ lesson, moduleId, onUpdated }: { lesson: Lesson, mod
           title: formData.title,
           order_index: formData.order_index,
           duration_minutes: formData.duration_minutes,
+          lesson_type: formData.lesson_type,
+          video_url: formData.video_url || null,
+          content: formData.content || null,
+          content_title: formData.content_title || null,
         })
         .eq("id", lesson.id)
 
@@ -829,31 +1075,47 @@ function EditLessonDialog({ lesson, moduleId, onUpdated }: { lesson: Lesson, mod
           <Pencil className="h-3 w-3" />
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Editar Lección</DialogTitle>
+            <DialogDescription>Modifica el contenido y los metadatos de la lección seleccionada.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <Label>Título *</Label>
+              <Label className="mb-2 block">Título *</Label>
               <Input
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 required
               />
             </div>
-            <div>
-              <Label>Orden</Label>
-              <Input
-                type="number"
-                value={formData.order_index}
-                onChange={(e) => setFormData({ ...formData, order_index: parseInt(e.target.value) })}
-                min={1}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="mb-2 block">Tipo *</Label>
+                <Select value={formData.lesson_type} onValueChange={(v) => setFormData({ ...formData, lesson_type: v })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {lessonTypeOptions.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="mb-2 block">Orden</Label>
+                <Input
+                  type="number"
+                  value={formData.order_index}
+                  onChange={(e) => setFormData({ ...formData, order_index: parseInt(e.target.value) })}
+                  min={1}
+                />
+              </div>
             </div>
             <div>
-              <Label>Duración (minutos)</Label>
+              <Label className="mb-2 block">Duración (minutos)</Label>
               <Input
                 type="number"
                 value={formData.duration_minutes || ""}
@@ -861,12 +1123,98 @@ function EditLessonDialog({ lesson, moduleId, onUpdated }: { lesson: Lesson, mod
                 min={0}
               />
             </div>
+
+            {/* Campos específicos según el tipo */}
+            {formData.lesson_type === "video" && (
+              <div>
+                <Label className="mb-2 block">URL del Video *</Label>
+                <Input
+                  value={formData.video_url}
+                  onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
+                  placeholder="https://www.youtube.com/embed/..."
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  URL embebida de YouTube, Vimeo, etc.
+                </p>
+              </div>
+            )}
+
+            {formData.lesson_type === "pdf" && (
+              <div className="space-y-3">
+                <div>
+                  <Label className="mb-2 block">Subir PDF</Label>
+                  <Input
+                    type="file"
+                    accept=".pdf"
+                    onChange={handlePDFUpload}
+                    disabled={isUploadingPDF}
+                  />
+                  {isUploadingPDF && (
+                    <p className="text-xs text-muted-foreground mt-1">Subiendo PDF...</p>
+                  )}
+                </div>
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">O</span>
+                  </div>
+                </div>
+                <div>
+                  <Label className="mb-2 block">URL del PDF</Label>
+                  <Input
+                    value={formData.video_url}
+                    onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
+                    placeholder="https://..."
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Si ya tienes el PDF alojado en otro lugar
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {formData.lesson_type === "reading" && (
+              <div className="space-y-3">
+                <div>
+                  <Label className="mb-2 block">Título del Contenido (opcional)</Label>
+                  <Input
+                    value={formData.content_title}
+                    onChange={(e) => setFormData({ ...formData, content_title: e.target.value })}
+                    placeholder="Ej: Introducción al tema, Conceptos básicos, etc."
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Si no agregas un título, no se mostrará ningún encabezado sobre el contenido
+                  </p>
+                </div>
+                <div>
+                  <Label className="mb-2 block">Contenido *</Label>
+                  <RichTextEditor
+                    value={formData.content}
+                    onChange={(value) => setFormData({ ...formData, content: value })}
+                  />
+                </div>
+              </div>
+            )}
+
+            {formData.lesson_type === "exercise" && (
+              <div>
+                <Label className="mb-2 block">Instrucciones del Ejercicio</Label>
+                <Textarea
+                  value={formData.content}
+                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                  placeholder="Describe el ejercicio que los estudiantes deben completar..."
+                  rows={6}
+                />
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" disabled={isLoading || isUploadingPDF}>
               {isLoading ? "Guardando..." : "Guardar Cambios"}
             </Button>
           </DialogFooter>

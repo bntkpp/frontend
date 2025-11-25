@@ -19,7 +19,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet"
 import { useState } from "react"
 
 const navigation = [
@@ -97,6 +97,10 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="w-64 p-0">
+            <SheetTitle className="sr-only">Menú de navegación</SheetTitle>
+            <SheetDescription className="sr-only">
+              Navegación principal del panel de administración
+            </SheetDescription>
             <div className="flex flex-col h-full">
               <div className="p-6 border-b bg-gradient-to-br from-primary/5 to-transparent">
                 <Link href="/admin" className="flex items-center gap-2 group">

@@ -8,6 +8,51 @@ import { Separator } from "@/components/ui/separator"
 import { CheckCircle2, FileText, Headphones, PlayCircle } from "lucide-react"
 import { PDFViewerSimple } from "@/components/pdf-viewer-simple"
 
+// Función para convertir texto enriquecido a HTML
+function formatRichText(text: string): string {
+  let formatted = text
+  
+  // URLs (debe ir primero para no interferir con otros formatos)
+  formatted = formatted.replace(
+    /(https?:\/\/[^\s<]+)/g, 
+    '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-primary underline hover:text-primary/80">$1</a>'
+  )
+  
+  // Negritas **texto** o __texto__
+  formatted = formatted.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+  formatted = formatted.replace(/__(.+?)__/g, '<strong>$1</strong>')
+  
+  // Cursivas *texto* o _texto_
+  formatted = formatted.replace(/\*(.+?)\*/g, '<em>$1</em>')
+  formatted = formatted.replace(/_(.+?)_/g, '<em>$1</em>')
+  
+  // Tachado ~~texto~~
+  formatted = formatted.replace(/~~(.+?)~~/g, '<del>$1</del>')
+  
+  // Títulos
+  formatted = formatted.replace(/^### (.+)$/gm, '<h3 class="text-xl font-bold mt-6 mb-3">$1</h3>')
+  formatted = formatted.replace(/^## (.+)$/gm, '<h2 class="text-2xl font-bold mt-8 mb-4">$1</h2>')
+  formatted = formatted.replace(/^# (.+)$/gm, '<h1 class="text-3xl font-bold mt-10 mb-5">$1</h1>')
+  
+  // Listas numeradas
+  formatted = formatted.replace(/^\d+\.\s+(.+)$/gm, '<li class="ml-6">$1</li>')
+  formatted = formatted.replace(/(<li class="ml-6">.*<\/li>\n?)+/g, '<ol class="list-decimal ml-4 space-y-2 my-4">$&</ol>')
+  
+  // Listas con viñetas
+  formatted = formatted.replace(/^[-•]\s+(.+)$/gm, '<li class="ml-6">$1</li>')
+  formatted = formatted.replace(/(<li class="ml-6">.*<\/li>\n?)+/g, match => {
+    if (!match.includes('list-decimal')) {
+      return `<ul class="list-disc ml-4 space-y-2 my-4">${match}</ul>`
+    }
+    return match
+  })
+  
+  // Saltos de línea
+  formatted = formatted.replace(/\n/g, '<br />')
+  
+  return formatted
+}
+
 interface LessonCapsule {
   id?: string
   type: "video" | "text" | "pdf" | "audio"
@@ -169,9 +214,9 @@ export function LessonContent({
         return (
           <div className="prose prose-base max-w-none dark:prose-invert prose-headings:font-bold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-p:text-base prose-p:leading-relaxed prose-ul:list-disc prose-ol:list-decimal prose-li:ml-4 prose-a:text-primary prose-a:underline prose-strong:font-bold">
             <div 
-              className="whitespace-pre-wrap"
+              className="leading-relaxed"
               dangerouslySetInnerHTML={{ 
-                __html: capsule.content?.replace(/\n/g, '<br />') || '' 
+                __html: formatRichText(capsule.content || '') 
               }}
             />
           </div>
