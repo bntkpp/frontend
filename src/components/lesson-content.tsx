@@ -12,19 +12,40 @@ import { PDFViewerSimple } from "@/components/pdf-viewer-simple"
 function formatRichText(text: string): string {
   let formatted = text
   
-  // URLs (debe ir primero para no interferir con otros formatos)
+  // Paso 1: Proteger URLs y enlaces markdown guardándolos temporalmente
+  const urlPlaceholders: string[] = []
+  const markdownLinkPlaceholders: string[] = []
+  
+  // Guardar enlaces markdown [texto](url)
   formatted = formatted.replace(
-    /(https?:\/\/[^\s<]+)/g, 
-    '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-primary underline hover:text-primary/80">$1</a>'
+    /\[([^\]]+)\]\(([^)]+)\)/g,
+    (match, text, url) => {
+      const placeholder = `§§§MDLINK${markdownLinkPlaceholders.length}§§§`
+      markdownLinkPlaceholders.push(`<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-primary underline hover:text-primary/80">${text}</a>`)
+      return placeholder
+    }
   )
   
+  // Guardar URLs simples (captura TODO hasta un espacio o fin de línea)
+  formatted = formatted.replace(
+    /(https?:\/\/[^\s<>"{}|\\^`\[\]]+)/g,
+    (match) => {
+      const placeholder = `§§§URL${urlPlaceholders.length}§§§`
+      // Limpiar posibles tags HTML que se hayan metido en la URL
+      const cleanUrl = match.replace(/<[^>]+>/g, '')
+      urlPlaceholders.push(`<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" class="text-primary underline hover:text-primary/80 break-all">${cleanUrl}</a>`)
+      return placeholder
+    }
+  )
+  
+  // Paso 2: Aplicar formatos de texto (ahora las URLs están protegidas)
   // Negritas **texto** o __texto__
   formatted = formatted.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
   formatted = formatted.replace(/__(.+?)__/g, '<strong>$1</strong>')
   
-  // Cursivas *texto* o _texto_
-  formatted = formatted.replace(/\*(.+?)\*/g, '<em>$1</em>')
-  formatted = formatted.replace(/_(.+?)_/g, '<em>$1</em>')
+  // Cursivas *texto* o _texto_ (solo con espacios alrededor para evitar conflictos)
+  formatted = formatted.replace(/\*([^*]+?)\*/g, '<em>$1</em>')
+  formatted = formatted.replace(/(^|\s)_([^_\s][^_]*?)_(\s|$)/gm, '$1<em>$2</em>$3')
   
   // Tachado ~~texto~~
   formatted = formatted.replace(/~~(.+?)~~/g, '<del>$1</del>')
@@ -49,6 +70,15 @@ function formatRichText(text: string): string {
   
   // Saltos de línea
   formatted = formatted.replace(/\n/g, '<br />')
+  
+  // Paso 3: Restaurar URLs
+  markdownLinkPlaceholders.forEach((link, i) => {
+    formatted = formatted.replace(`§§§MDLINK${i}§§§`, link)
+  })
+  
+  urlPlaceholders.forEach((link, i) => {
+    formatted = formatted.replace(`§§§URL${i}§§§`, link)
+  })
   
   return formatted
 }
@@ -304,9 +334,9 @@ export function LessonContent({
           <div className="max-w-4xl mx-auto px-4 md:px-8 py-6 md:py-8">
             <div className="prose prose-base max-w-none dark:prose-invert prose-headings:font-bold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-p:text-base prose-p:leading-relaxed prose-ul:list-disc prose-ol:list-decimal prose-li:ml-4 prose-a:text-primary prose-a:underline prose-strong:font-bold">
               <div 
-                className="whitespace-pre-wrap"
+                className="leading-relaxed"
                 dangerouslySetInnerHTML={{ 
-                  __html: lesson.content.replace(/\n/g, '<br />') 
+                  __html: formatRichText(lesson.content) 
                 }}
               />
             </div>
