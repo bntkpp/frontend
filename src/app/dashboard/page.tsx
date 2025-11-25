@@ -6,6 +6,8 @@ import { BookOpen, Clock, TrendingUp } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
+import { ExpiredSubscriptionAlert } from "@/components/expired-subscription-alert"
+import { Suspense } from "react"
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -42,6 +44,10 @@ export default async function DashboardPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        <Suspense fallback={null}>
+          <ExpiredSubscriptionAlert />
+        </Suspense>
+
         <div>
           <h1 className="text-2xl md:text-3xl font-bold mb-2">Bienvenido, {profile?.full_name || user.email}</h1>
           <p className="text-sm md:text-base text-muted-foreground">Aquí puedes ver tu progreso y gestionar tus cursos</p>
