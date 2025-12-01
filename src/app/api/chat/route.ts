@@ -92,7 +92,7 @@ Ayuda a los estudiantes con:
 Usa formato markdown para mejorar la presentación. Sé amigable y profesional. Responde siempre en español.`
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash-exp",
+      model: "gemini-2.5-flash", // Cambiar a modelo estable con mejor cuota
       systemInstruction: systemPrompt,
     })
 
@@ -140,8 +140,19 @@ Usa formato markdown para mejorar la presentación. Sé amigable y profesional. 
     })
   } catch (error: any) {
     console.error("Chat API error:", error)
+    
+    // Manejo específico de errores de cuota
+    if (error.status === 429 || error.message?.includes("quota") || error.message?.includes("rate limit")) {
+      return Response.json(
+        { 
+          error: "El servicio de chat ha alcanzado su límite temporal. Por favor, intenta nuevamente en unos minutos."
+        },
+        { status: 429 }
+      )
+    }
+    
     return Response.json(
-      { error: error.message || "Error inesperado" },
+      { error: error.message || "Error inesperado en el servicio de chat. Por favor, intenta más tarde." },
       { status: 500 }
     )
   }
