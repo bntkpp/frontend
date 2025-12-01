@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, useCallback, useRef, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -27,15 +27,15 @@ export function ChatbotWidget({ courseId, courseName, isOpen: externalIsOpen, on
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Usar estado externo si está disponible, sino usar interno
   const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
   const setIsOpen = onOpenChange || setInternalIsOpen;
 
-  // Cambia a true si quieres forzar el modo debug (no-stream) en la API:
-  const USE_DEBUG_MODE = false; // <-- pon true para probar sin streaming
+  const USE_DEBUG_MODE = false;
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = useCallback(async (e: FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
@@ -45,6 +45,7 @@ export function ChatbotWidget({ courseId, courseName, isOpen: externalIsOpen, on
       content: input.trim(),
     };
     setMessages((prev) => [...prev, userMessage]);
+    const currentInput = input.trim();
     setInput("");
     setIsLoading(true);
 
@@ -109,61 +110,76 @@ export function ChatbotWidget({ courseId, courseName, isOpen: externalIsOpen, on
         }
       }
     } catch (error: any) {
+      let errorMessage = "Ha ocurrido un error. Por favor, intenta nuevamente.";
+      
+      if (error?.message?.includes("límite temporal") || error?.message?.includes("quota")) {
+        errorMessage = "⏳ El servicio de chat está temporalmente saturado. Por favor, espera unos minutos e intenta de nuevo.";
+      } else if (error?.message) {
+        errorMessage = `${error.message}`;
+      }
+      
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now().toString(),
           role: "assistant",
-          content: `Lo siento: ${error?.message ?? "error desconocido"}.`,
+          content: errorMessage,
         },
       ]);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [input, isLoading, messages, courseId, courseName, USE_DEBUG_MODE]);
 
-  const ChatContent = () => (
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setInput(e.target.value);
+  }, []);
+
+  const handleClose = useCallback(() => {
+    setIsOpen(false);
+  }, [setIsOpen]);
+
+  const chatContent = (
     <>
-      <CardHeader className="flex flex-row items-center justify-between border-b flex-shrink-0">
-        <CardTitle className="text-lg">
-          {courseName ? `Asistente: ${courseName}` : "Asistente Virtual"}
-        </CardTitle>
-        <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
+      <CardHeader className="flex flex-row items-center justify-between border-b py-3 px-4 flex-shrink-0 bg-gradient-to-r from-primary/5 to-primary/10">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+          <CardTitle className="text-base font-semibold">
+            {courseName ? `${courseName}` : "Asistente Virtual"}
+          </CardTitle>
+        </div>
+        <Button variant="ghost" size="icon" onClick={handleClose} className="h-8 w-8">
           <X className="h-4 w-4" />
         </Button>
       </CardHeader>
 
-      <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
+      <CardContent className="flex-1 overflow-y-auto p-4 space-y-3 bg-gradient-to-b from-muted/20 to-background">
         {messages.length === 0 && (
           <div className="flex justify-start">
-            <div className="bg-muted rounded-lg px-4 py-2">¡Hola! ¿En qué puedo ayudarte hoy?</div>
+            <div className="bg-muted/80 backdrop-blur-sm rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm max-w-[85%]">
+              <p>¡Hola! ¿En qué puedo ayudarte hoy?</p>
+            </div>
           </div>
         )}
 
         {messages.map((msg) => (
           <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-            <div
-              className={`max-w-[80%] rounded-lg px-4 py-2 whitespace-pre-wrap ${
-                msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
-              }`}
-            >
-              {msg.role === "assistant" ? (
-                <div className="bg-muted rounded-lg p-4">
-                  <MarkdownMessage content={msg.content} />
-                </div>
-              ) : (
-                <div className="bg-primary text-primary-foreground rounded-lg p-4">
-                  {msg.content}
-                </div>
-              )}
-            </div>
+            {msg.role === "assistant" ? (
+              <div className="bg-muted/80 backdrop-blur-sm rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm max-w-[85%]">
+                <MarkdownMessage content={msg.content} />
+              </div>
+            ) : (
+              <div className="bg-primary text-primary-foreground rounded-2xl rounded-tr-sm px-4 py-3 shadow-sm max-w-[85%]">
+                <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+              </div>
+            )}
           </div>
         ))}
 
         {isLoading && (
           <div className="flex justify-start">
-            <div className="bg-muted rounded-lg px-4 py-2">
-              <div className="flex gap-1">
+            <div className="bg-muted/80 backdrop-blur-sm rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
+              <div className="flex gap-1.5">
                 <div className="w-2 h-2 bg-foreground/40 rounded-full animate-bounce" />
                 <div className="w-2 h-2 bg-foreground/40 rounded-full animate-bounce [animation-delay:0.2s]" />
                 <div className="w-2 h-2 bg-foreground/40 rounded-full animate-bounce [animation-delay:0.4s]" />
@@ -173,15 +189,23 @@ export function ChatbotWidget({ courseId, courseName, isOpen: externalIsOpen, on
         )}
       </CardContent>
 
-      <div className="p-4 border-t flex-shrink-0">
+      <div className="p-3 border-t flex-shrink-0 bg-background/95 backdrop-blur-sm">
         <form onSubmit={handleSubmit} className="flex gap-2">
           <Input
+            ref={inputRef}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={handleInputChange}
             placeholder="Escribe tu mensaje..."
             disabled={isLoading}
+            autoComplete="off"
+            className="rounded-full border-2 focus-visible:ring-1"
           />
-          <Button type="submit" disabled={isLoading || !input.trim()} size="icon">
+          <Button 
+            type="submit" 
+            disabled={isLoading || !input.trim()} 
+            size="icon"
+            className="rounded-full h-10 w-10 flex-shrink-0"
+          >
             <Send className="h-4 w-4" />
           </Button>
         </form>
@@ -189,13 +213,13 @@ export function ChatbotWidget({ courseId, courseName, isOpen: externalIsOpen, on
     </>
   );
 
-  // Si es móvil y está controlado externamente, solo mostrar Sheet (el botón está en el header)
+  // Si es móvil y está controlado externamente, solo mostrar Sheet
   if (isMobile && onOpenChange) {
     return (
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetContent side="left" className="w-full sm:w-96 p-0 flex flex-col">
           <div className="flex flex-col h-full">
-            <ChatContent />
+            {chatContent}
           </div>
         </SheetContent>
       </Sheet>
@@ -208,7 +232,7 @@ export function ChatbotWidget({ courseId, courseName, isOpen: externalIsOpen, on
       {!isOpen && (
         <Button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-24 right-6 h-14 w-14 rounded-full shadow-lg z-30"
+          className="fixed bottom-24 right-6 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105 z-30"
           size="icon"
         >
           <MessageCircle className="h-6 w-6" />
@@ -216,8 +240,8 @@ export function ChatbotWidget({ courseId, courseName, isOpen: externalIsOpen, on
       )}
 
       {isOpen && (
-        <Card className="fixed bottom-24 right-6 w-96 h-[500px] shadow-2xl z-30 flex flex-col">
-          <ChatContent />
+        <Card className="fixed bottom-24 right-6 w-96 h-[550px] shadow-2xl z-30 flex flex-col overflow-hidden border-2">
+          {chatContent}
         </Card>
       )}
     </>
